@@ -36,7 +36,14 @@ body { margin: 0; background: #171b24; }
 }
 .app-shell * { box-sizing: border-box; }
 
-.lang-toggle { display: flex; gap: 6px; margin-bottom: 16px; }
+.top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.lang-toggle { display: flex; gap: 6px; }
+.settings-toggle {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  width: 34px; height: 34px; font-size: 15px; cursor: pointer; color: var(--text-dim);
+}
+.settings-toggle:hover { border-color: var(--gold); }
+.settings-toggle.active { border-color: var(--gold); color: var(--gold); }
 .lang-btn {
   font-size: 12.5px; font-family: var(--sans); background: var(--surface-2); color: var(--text-dim);
   border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px; cursor: pointer;
@@ -56,12 +63,28 @@ body { margin: 0; background: #171b24; }
 }
 .backend-row input:focus { outline: none; border-color: var(--gold); }
 
-.mode-tabs { display: flex; gap: 8px; margin-bottom: 22px; }
-.mode-tab {
-  flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-  padding: 11px; font-size: 14px; font-family: var(--sans); font-weight: 600; color: var(--text-dim); cursor: pointer;
+.back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-size: 14px; font-weight: 700; font-family: var(--sans);
+  cursor: pointer; padding: 9px 16px; margin-bottom: 18px;
 }
-.mode-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(227,177,88,0.08); }
+.back-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+.home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
+.home-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 30px 16px; text-align: center; cursor: pointer; transition: border-color .15s, transform .1s;
+}
+.home-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+.home-icon { font-size: 36px; margin-bottom: 10px; }
+.home-label { font-family: var(--sans); font-size: 14.5px; font-weight: 700; color: var(--text); }
+
+@media (max-width: 420px) {
+  .home-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .home-card { padding: 22px 10px; }
+  .home-icon { font-size: 28px; }
+}
 
 /* ===== 문장 연습 (sd-*) ===== */
 .sd-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
@@ -158,7 +181,38 @@ body { margin: 0; background: #171b24; }
 .sd-word-cat { font-family: var(--mono); font-size: 11.5px; color: var(--coral); background: rgba(226,104,90,0.1); border: 1px solid rgba(226,104,90,0.35); border-radius: 999px; padding: 3px 10px; }
 .sd-word-ok { font-family: var(--mono); font-size: 11.5px; color: var(--teal); }
 .sd-error-box { background: var(--surface-2); border-left: 2px solid var(--coral); border-radius: 4px; padding: 12px 14px; font-size: 13px; color: var(--text-dim); margin-top: 12px; white-space: pre-line; }
-.sd-loading { color: var(--text-dim); font-size: 13.5px; margin-top: 12px; }
+.sd-custom-hint { font-size: 12px; color: var(--text-faint); margin: 0 0 10px; }
+.sd-custom-row { display: flex; gap: 8px; }
+.sd-char-count { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); text-align: right; margin-top: 4px; }
+.sd-char-count.limit { color: var(--coral); }
+.sd-input-editable {
+  flex: 1; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 10px 12px; font-size: 15px; font-family: var(--sans);
+}
+.sd-input-editable:focus { outline: none; border-color: var(--gold); }
+.sd-input-editable::placeholder { color: var(--text-faint); }
+
+.an-stat-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.an-stat { flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+.an-stat .num { font-family: var(--serif); font-size: 26px; color: var(--gold); }
+.an-stat .label { font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 4px; }
+.an-summary {
+  background: rgba(227,177,88,0.06); border: 1px solid rgba(227,177,88,0.3); border-radius: 10px;
+  padding: 14px 16px; font-size: 14px; line-height: 1.6; margin-bottom: 18px;
+}
+.an-rule-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.an-rule-row { display: flex; align-items: center; gap: 10px; }
+.an-rule-name { font-family: var(--sans); font-size: 13px; color: var(--text-dim); width: 110px; flex-shrink: 0; }
+.an-bar-track { flex: 1; height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.an-bar-fill { height: 100%; border-radius: 999px; background: var(--gold); }
+.an-bar-fill[data-rule="경음화"] { background: var(--gold); }
+.an-bar-fill[data-rule="비음화"] { background: var(--blue); }
+.an-bar-fill[data-rule="연음"], .an-bar-fill[data-rule="연음(겹받침)"] { background: var(--teal); }
+.an-bar-fill[data-rule="격음화"] { background: var(--purple); }
+.an-bar-fill[data-rule="유음화"] { background: var(--rose); }
+.an-bar-fill[data-rule="ㅎ탈락"] { background: var(--gray); }
+.an-rule-score { font-family: var(--mono); font-size: 12px; color: var(--text-faint); width: 36px; text-align: right; flex-shrink: 0; }
+.an-empty { text-align: center; padding: 30px 10px; color: var(--text-faint); font-size: 14px; }
 
 /* ===== 회화 연습 (cv-*) ===== */
 .cv-scenario-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
@@ -232,26 +286,49 @@ body { margin: 0; background: #171b24; }
 <body>
 
 <div class="app-shell">
-  <div class="lang-toggle">
-    <button class="lang-btn" id="langJa">日本語</button>
-    <button class="lang-btn" id="langKo">한국어</button>
+  <div class="top-bar">
+    <div class="lang-toggle">
+      <button class="lang-btn" id="langJa">日本語</button>
+      <button class="lang-btn" id="langKo">한국어</button>
+    </div>
+    <button class="settings-toggle" id="settingsToggleBtn" title="설정">⚙️</button>
   </div>
-  <div class="app-eyebrow" data-i18n="appEyebrow"></div>
-  <h1 class="app-title" data-i18n="appTitle"></h1>
-  <p class="app-sub" data-i18n="appSub"></p>
 
-  <div class="backend-row">
+  <div class="backend-row" id="backendRow" style="display:none">
     <span data-i18n="backendLabel"></span>
     <input id="backendUrl" value="https://pronunciation-api-is3w.onrender.com" />
   </div>
 
-  <div class="mode-tabs">
-    <button class="mode-tab active" id="modeSentenceBtn" data-i18n="modeSentence"></button>
-    <button class="mode-tab" id="modeConversationBtn" data-i18n="modeConversation"></button>
+  <button class="back-btn" id="backBtn" style="display:none">← <span data-i18n="backBtnLabel"></span></button>
+
+  <!-- ===== 홈 ===== -->
+  <div id="homeView">
+    <div class="app-eyebrow" data-i18n="appEyebrow"></div>
+    <h1 class="app-title" data-i18n="appTitle"></h1>
+    <p class="app-sub" data-i18n="appSub"></p>
+
+    <div class="home-grid">
+      <div class="home-card" id="homeSentenceBtn">
+        <div class="home-icon">📝</div>
+        <div class="home-label" data-i18n="modeSentence"></div>
+      </div>
+      <div class="home-card" id="homeCustomBtn">
+        <div class="home-icon">✏️</div>
+        <div class="home-label" data-i18n="modeCustom"></div>
+      </div>
+      <div class="home-card" id="homeConversationBtn">
+        <div class="home-icon">💬</div>
+        <div class="home-label" data-i18n="modeConversation"></div>
+      </div>
+      <div class="home-card" id="homeAnalyticsBtn">
+        <div class="home-icon">📊</div>
+        <div class="home-label" data-i18n="modeAnalytics"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ===== 문장 연습 ===== -->
-  <div id="sentenceView">
+  <div id="sentenceView" style="display:none">
     <div class="sd-card">
       <h2 data-i18n="card1Title"></h2>
       <div id="exampleChips"></div>
@@ -287,11 +364,57 @@ body { margin: 0; background: #171b24; }
     <div class="sd-result" id="resultWrap"></div>
   </div>
 
+  <!-- ===== 커스텀 문장 ===== -->
+  <div id="customView" style="display:none">
+    <div class="sd-card">
+      <h2 data-i18n="customTitle"></h2>
+      <p class="sd-custom-hint" data-i18n="customHint"></p>
+      <div class="sd-custom-row">
+        <input class="sd-input-editable" id="customInput" data-i18n="customPlaceholder" maxlength="80">
+        <button class="sd-btn" id="customApplyBtn" data-i18n="customApplyBtn"></button>
+      </div>
+      <div class="sd-char-count" id="customCharCount">0/80</div>
+    </div>
+
+    <div class="sd-card">
+      <h2 data-i18n="card2TitleListen"></h2>
+      <div class="sd-target-preview" id="customTargetPreview"></div>
+      <div class="sd-rule-tags" id="customRuleTags"></div>
+      <button class="sd-listen-btn-wide" id="customListenBtn" disabled data-i18n="listenBtnWide"></button>
+    </div>
+
+    <div class="sd-card">
+      <h2 data-i18n="card3Title"></h2>
+      <div class="sd-record-row">
+        <button class="sd-mic-btn" id="customMicBtn">●</button>
+        <div class="sd-record-meta">
+          <div class="sd-record-status" id="customRecordStatus"></div>
+          <div class="sd-meter"><div class="sd-meter-fill" id="customMeterFill"></div></div>
+        </div>
+      </div>
+      <div class="sd-playback" id="customPlaybackWrap" style="display:none">
+        <audio id="customPlaybackAudio" controls></audio>
+      </div>
+    </div>
+
+    <div class="sd-diagnose-row">
+      <button class="sd-btn" id="customDiagnoseBtn" disabled data-i18n="diagnoseBtn"></button>
+      <button class="sd-btn secondary" id="customResetBtn" data-i18n="resetBtn"></button>
+    </div>
+
+    <div class="sd-result" id="customResultWrap"></div>
+  </div>
+
   <!-- ===== 회화 연습 ===== -->
   <div id="conversationView" style="display:none">
     <div class="cv-scenario-row" id="scenarioRow"></div>
     <div class="cv-thread" id="thread"></div>
     <div id="actionWrap"></div>
+  </div>
+
+  <!-- ===== 학습 기록 ===== -->
+  <div id="analyticsView" style="display:none">
+    <div class="sd-card" id="analyticsWrap"></div>
   </div>
 </div>
 
@@ -392,6 +515,26 @@ body { margin: 0; background: #171b24; }
     detailShow: { ko: '세부 점수 확인', ja: '詳細スコアを見る' },
     detailHide: { ko: '접기', ja: '閉じる' },
     myRecording: { ko: '내 녹음', ja: '自分の録音' },
+
+    modeAnalytics: { ko: '📊 학습 기록', ja: '📊 学習記録' },
+    modeCustom: { ko: '✏️ 커스텀 문장', ja: '✏️ カスタム文' },
+    backBtnLabel: { ko: '홈으로', ja: 'ホームへ' },
+    customTitle: { ko: '✏️ 직접 문장 입력하기', ja: '✏️ 文を直接入力する' },
+    customHint: {
+      ko: '커리큘럼에 없는 문장도 연습할 수 있어요. 다만 검증된 39문장과 달리, 드물게 규칙 엔진이 놓치는 예외가 있을 수 있어요.',
+      ja: 'カリキュラムにない文も練習できます。ただし検証済みの39文と違い、まれにルールエンジンが見落とす例外があるかもしれません。',
+    },
+    customPlaceholder: { ko: '한국어 문장을 입력하세요', ja: '韓国語の文を入力してください' },
+    customApplyBtn: { ko: '적용', ja: '適用' },
+    totalPractice: { ko: '총 연습 횟수', ja: '総練習回数' },
+    avgScore: { ko: '평균 점수', ja: '平均点' },
+    resetHistory: { ko: '기록 초기화', ja: '記録をリセット' },
+    resetConfirm: { ko: '지금까지의 학습 기록을 전부 지웁니다. 계속할까요?', ja: 'これまでの学習記録をすべて削除します。続けますか？' },
+    noHistoryYet: { ko: '아직 진단 기록이 없어요. 문장 연습이나 회화 연습을 한 번 해보세요.', ja: 'まだ診断記録がありません。文の練習か会話練習をしてみてください。' },
+    summaryTemplate: {
+      ko: (rule, avg, rate) => `가장 약한 부분은 **${rule}**이에요 — 평균 ${avg}점, ${rate}%의 확률로 오류가 지적되고 있어요. 이 부분을 조금 더 연습해보시는 걸 추천해요.`,
+      ja: (rule, avg, rate) => `一番弱いのは**${rule}**です — 平均${avg}点、${rate}%の確率で誤りが指摘されています。この部分をもう少し練習してみましょう。`,
+    },
   };
 
   // 일본어권 한국어 교재에서 통용되는 한자어 용어. 100% 검증은 못 했으니
@@ -456,15 +599,108 @@ body { margin: 0; background: #171b24; }
     }
   }
 
-  // ================= 모드 탭 전환 =================
-  function setMode(mode){
-    document.getElementById('sentenceView').style.display = mode === 'sentence' ? '' : 'none';
-    document.getElementById('conversationView').style.display = mode === 'conversation' ? '' : 'none';
-    document.getElementById('modeSentenceBtn').classList.toggle('active', mode === 'sentence');
-    document.getElementById('modeConversationBtn').classList.toggle('active', mode === 'conversation');
+  // ================= 학습 기록 (localStorage) =================
+  const HISTORY_KEY = 'shadowing_history_v1';
+  function loadHistory(){
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) { return []; }
   }
-  document.getElementById('modeSentenceBtn').addEventListener('click', () => setMode('sentence'));
-  document.getElementById('modeConversationBtn').addEventListener('click', () => setMode('conversation'));
+  function saveHistoryRecord(record){
+    const hist = loadHistory();
+    hist.push(record);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch (e) { console.error('history save failed', e); }
+  }
+  function findCategoryOf(sentence){
+    for (const [cat, list] of Object.entries(CURRICULUM)) { if (list.includes(sentence)) return cat; }
+    return null; // 커리큘럼에 없으면 커스텀 입력으로 간주
+  }
+  function recordDiagnosis(data, meta){
+    const words = data.words || [];
+    const ruleHits = [];
+    words.forEach(w => (w.relatedRules || []).forEach(r => {
+      ruleHits.push({ rule: r, score: w.accuracyScore, flagged: !!w.estimatedCategory });
+    }));
+    saveHistoryRecord({
+      ts: Date.now(), mode: meta.mode, sentence: meta.sentence, category: meta.category,
+      overall: data.overall || {}, ruleHits,
+    });
+  }
+
+  function renderAnalytics(){
+    const hist = loadHistory();
+    const wrap = document.getElementById('analyticsWrap');
+    if (hist.length === 0){
+      wrap.innerHTML = `<div class="an-empty">${t('noHistoryYet')}</div>`;
+      return;
+    }
+    const totalCount = hist.length;
+    const avgOverall = Math.round((hist.reduce((s, h) => s + (h.overall.PronScore || 0), 0) / totalCount) * 10) / 10;
+
+    const ruleStats = {};
+    hist.forEach(h => {
+      (h.ruleHits || []).forEach(hit => {
+        if (!ruleStats[hit.rule]) ruleStats[hit.rule] = { count: 0, flagged: 0, scoreSum: 0, scoreCount: 0 };
+        const s = ruleStats[hit.rule];
+        s.count++;
+        if (hit.flagged) s.flagged++;
+        if (typeof hit.score === 'number') { s.scoreSum += hit.score; s.scoreCount++; }
+      });
+    });
+    const ruleRows = Object.entries(ruleStats).map(([rule, s]) => ({
+      rule,
+      avg: s.scoreCount ? Math.round(s.scoreSum / s.scoreCount) : null,
+      flagRate: s.count ? Math.round((s.flagged / s.count) * 100) : 0,
+      count: s.count,
+    })).sort((a, b) => (a.avg ?? 100) - (b.avg ?? 100));
+
+    let summaryHtml = '';
+    if (ruleRows.length){
+      const worst = ruleRows[0];
+      summaryHtml = `<div class="an-summary">${t('summaryTemplate', ruleLabel(worst.rule), worst.avg ?? '–', worst.flagRate)}</div>`;
+    }
+
+    wrap.innerHTML = `
+      <div class="an-stat-row">
+        <div class="an-stat"><div class="num">${totalCount}</div><div class="label">${t('totalPractice')}</div></div>
+        <div class="an-stat"><div class="num">${avgOverall}</div><div class="label">${t('avgScore')}</div></div>
+      </div>
+      ${summaryHtml}
+      <div class="an-rule-list">
+        ${ruleRows.map(r => `
+          <div class="an-rule-row">
+            <span class="an-rule-name">${ruleLabel(r.rule)}</span>
+            <div class="an-bar-track"><div class="an-bar-fill" data-rule="${r.rule}" style="width:${r.avg ?? 0}%"></div></div>
+            <span class="an-rule-score">${r.avg ?? '–'}${t('scoreUnit')}</span>
+          </div>
+        `).join('')}
+      </div>
+      <button class="sd-btn secondary" id="resetHistoryBtn">${t('resetHistory')}</button>
+    `;
+    document.getElementById('resetHistoryBtn').addEventListener('click', () => {
+      if (confirm(t('resetConfirm'))) { localStorage.removeItem(HISTORY_KEY); renderAnalytics(); }
+    });
+  }
+
+  // ================= 모드 탭 전환 =================
+  const VIEW_IDS = { home: 'homeView', sentence: 'sentenceView', custom: 'customView', conversation: 'conversationView', analytics: 'analyticsView' };
+  function setMode(mode){
+    Object.entries(VIEW_IDS).forEach(([m, id]) => {
+      document.getElementById(id).style.display = (mode === m) ? '' : 'none';
+    });
+    document.getElementById('backBtn').style.display = (mode === 'home') ? 'none' : 'inline-flex';
+    if (mode === 'analytics') renderAnalytics();
+  }
+  document.getElementById('homeSentenceBtn').addEventListener('click', () => setMode('sentence'));
+  document.getElementById('homeCustomBtn').addEventListener('click', () => setMode('custom'));
+  document.getElementById('homeConversationBtn').addEventListener('click', () => setMode('conversation'));
+  document.getElementById('homeAnalyticsBtn').addEventListener('click', () => setMode('analytics'));
+  document.getElementById('backBtn').addEventListener('click', () => setMode('home'));
+
+  document.getElementById('settingsToggleBtn').addEventListener('click', () => {
+    const row = document.getElementById('backendRow');
+    const isOpen = row.style.display !== 'none';
+    row.style.display = isOpen ? 'none' : 'flex';
+    document.getElementById('settingsToggleBtn').classList.toggle('active', !isOpen);
+  });
 
   // ================================================================
   // ===================== ① 문장 연습 뷰 ===========================
@@ -522,18 +758,14 @@ body { margin: 0; background: #171b24; }
     chipWrap.appendChild(catRow);
   }
 
-  function updateTarget(){
-    const sentence = document.getElementById('sentenceInput').value.trim();
-    const preview = document.getElementById('targetPreview');
-    const tagWrap = document.getElementById('ruleTags');
-    const listenBtn = document.getElementById('listenBtn');
+  function renderTargetPreview(sentence, els){
     if (!sentence){
-      preview.innerHTML = `<span class="sd-empty-hint">${t('pickSentenceHint')}</span>`;
-      tagWrap.innerHTML = '';
-      listenBtn.disabled = true;
+      els.preview.innerHTML = `<span class="sd-empty-hint">${t('pickSentenceHint')}</span>`;
+      els.tagWrap.innerHTML = '';
+      if (els.listenBtn) els.listenBtn.disabled = true;
       return;
     }
-    listenBtn.disabled = false;
+    if (els.listenBtn) els.listenBtn.disabled = false;
     const { result, notes } = applyRules(sentence);
     const ruleByIndex = new Map();
     notes.forEach(n => {
@@ -545,13 +777,44 @@ body { margin: 0; background: #171b24; }
       const rule = ruleByIndex.get(i) || '';
       return `<span class="hl" data-rule="${rule}">${ch}</span>`;
     }).join('');
-    preview.innerHTML = `<span class="orig">${sentence}</span><br>${spans}`;
-    tagWrap.innerHTML = '';
-    notes.forEach(n => { const tag = document.createElement('span'); tag.className = 'sd-rule-tag'; tag.dataset.rule = n.rule; tag.textContent = ruleLabel(n.rule); tagWrap.appendChild(tag); });
+    els.preview.innerHTML = `<span class="orig">${sentence}</span><br>${spans}`;
+    els.tagWrap.innerHTML = '';
+    notes.forEach(n => { const tag = document.createElement('span'); tag.className = 'sd-rule-tag'; tag.dataset.rule = n.rule; tag.textContent = ruleLabel(n.rule); els.tagWrap.appendChild(tag); });
+  }
+
+  function updateTarget(){
+    const sentence = document.getElementById('sentenceInput').value.trim();
+    renderTargetPreview(sentence, {
+      preview: document.getElementById('targetPreview'),
+      tagWrap: document.getElementById('ruleTags'),
+      listenBtn: document.getElementById('listenBtn'),
+    });
   }
   document.getElementById('sentenceInput').addEventListener('input', updateTarget);
   document.getElementById('listenBtn').addEventListener('click', () => {
     playTTS(document.getElementById('sentenceInput').value.trim(), document.getElementById('listenBtn'));
+  });
+
+  function updateCustomTarget(){
+    const sentence = document.getElementById('customInput').value.trim();
+    renderTargetPreview(sentence, {
+      preview: document.getElementById('customTargetPreview'),
+      tagWrap: document.getElementById('customRuleTags'),
+      listenBtn: document.getElementById('customListenBtn'),
+    });
+  }
+  document.getElementById('customApplyBtn').addEventListener('click', () => { updateCustomTarget(); });
+  document.getElementById('customInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('customApplyBtn').click();
+  });
+  document.getElementById('customInput').addEventListener('input', (e) => {
+    const len = e.target.value.length;
+    const counter = document.getElementById('customCharCount');
+    counter.textContent = `${len}/80`;
+    counter.classList.toggle('limit', len >= 80);
+  });
+  document.getElementById('customListenBtn').addEventListener('click', () => {
+    playTTS(document.getElementById('customInput').value.trim(), document.getElementById('customListenBtn'));
   });
 
   // ---- 녹음 (16kHz mono WAV) ----
@@ -640,6 +903,7 @@ body { margin: 0; background: #171b24; }
       const data = await res.json();
       lastResultData = data;
       renderResult(data);
+      recordDiagnosis(data, { mode: 'sentence', sentence, category: findCategoryOf(sentence) });
     } catch (err) {
       resultWrap.innerHTML = `<div class="sd-error-box">${t('connectError', err.message)}</div>`;
     } finally {
@@ -647,8 +911,86 @@ body { margin: 0; background: #171b24; }
     }
   });
 
-  function renderResult(data){
-    const resultWrap = document.getElementById('resultWrap');
+  // ---- 커스텀 문장 녹음 (16kHz mono WAV) ----
+  let cuAudioContext, cuSourceNode, cuProcessorNode, cuGainNode, cuMediaStream;
+  let cuRecordedChunks = [], cuRecordedWavBlob = null, cuRecording = false, cuRecordState = 'idle';
+
+  const customMicBtn = document.getElementById('customMicBtn');
+  const customRecordStatus = document.getElementById('customRecordStatus');
+  const customMeterFill = document.getElementById('customMeterFill');
+  const customPlaybackWrap = document.getElementById('customPlaybackWrap');
+  const customPlaybackAudio = document.getElementById('customPlaybackAudio');
+  const customDiagnoseBtn = document.getElementById('customDiagnoseBtn');
+
+  function updateCustomRecordStatusText(){
+    const map = { idle: 'recordIdle', recording: 'recordingNow', done: 'recordDone', denied: 'recordDenied' };
+    customRecordStatus.textContent = t(map[cuRecordState]);
+  }
+
+  async function cuStartRecording(){
+    try { cuMediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } }); }
+    catch (err) { cuRecordState = 'denied'; updateCustomRecordStatusText(); return; }
+    cuAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    cuSourceNode = cuAudioContext.createMediaStreamSource(cuMediaStream);
+    cuProcessorNode = cuAudioContext.createScriptProcessor(4096, 1, 1);
+    cuGainNode = cuAudioContext.createGain(); cuGainNode.gain.value = 0;
+    cuRecordedChunks = [];
+    cuProcessorNode.onaudioprocess = (e) => {
+      const input = e.inputBuffer.getChannelData(0);
+      cuRecordedChunks.push(new Float32Array(input));
+      let sum = 0; for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+      customMeterFill.style.width = Math.min(100, Math.sqrt(sum / input.length) * 400) + '%';
+    };
+    cuSourceNode.connect(cuProcessorNode); cuProcessorNode.connect(cuGainNode); cuGainNode.connect(cuAudioContext.destination);
+    cuRecording = true; customMicBtn.classList.add('recording'); customMicBtn.textContent = '■';
+    cuRecordState = 'recording'; updateCustomRecordStatusText();
+    customPlaybackWrap.style.display = 'none'; customDiagnoseBtn.disabled = true;
+  }
+
+  function cuStopRecording(){
+    cuRecording = false; customMicBtn.classList.remove('recording'); customMicBtn.textContent = '●'; customMeterFill.style.width = '0%';
+    cuProcessorNode.disconnect(); cuSourceNode.disconnect(); cuGainNode.disconnect();
+    cuMediaStream.getTracks().forEach(tr => tr.stop());
+    const sampleRate = cuAudioContext.sampleRate; cuAudioContext.close();
+    cuRecordedWavBlob = encodeWav(cuRecordedChunks, sampleRate);
+    customPlaybackAudio.src = URL.createObjectURL(cuRecordedWavBlob);
+    customPlaybackWrap.style.display = 'block';
+    cuRecordState = 'done'; updateCustomRecordStatusText();
+    customDiagnoseBtn.disabled = false;
+  }
+
+  customMicBtn.addEventListener('click', () => { cuRecording ? cuStopRecording() : cuStartRecording(); });
+  document.getElementById('customResetBtn').addEventListener('click', () => {
+    cuRecordedWavBlob = null; customPlaybackWrap.style.display = 'none';
+    cuRecordState = 'idle'; updateCustomRecordStatusText(); customDiagnoseBtn.disabled = true;
+    document.getElementById('customResultWrap').innerHTML = '';
+  });
+
+  customDiagnoseBtn.addEventListener('click', async () => {
+    const sentence = document.getElementById('customInput').value.trim();
+    const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+    const resultWrap = document.getElementById('customResultWrap');
+    if (!cuRecordedWavBlob || !sentence) return;
+    resultWrap.innerHTML = `<div class="sd-loading">${t('diagnosing')}</div>`;
+    customDiagnoseBtn.disabled = true;
+    try {
+      const form = new FormData();
+      form.append('audio', cuRecordedWavBlob, 'attempt.wav');
+      form.append('sentence', sentence);
+      const res = await fetch(`${backendUrl}/api/pronunciation/assess`, { method: 'POST', body: form });
+      if (!res.ok) throw new Error(t('serverError', res.status));
+      const data = await res.json();
+      renderResult(data, resultWrap);
+      recordDiagnosis(data, { mode: 'custom', sentence, category: null });
+    } catch (err) {
+      resultWrap.innerHTML = `<div class="sd-error-box">${t('connectError', err.message)}</div>`;
+    } finally {
+      customDiagnoseBtn.disabled = false;
+    }
+  });
+
+  function renderResult(data, resultWrap){
+    resultWrap = resultWrap || document.getElementById('resultWrap');
     resultWrap.innerHTML = '';
     const stats = [
       [t('statAccuracy'), data.overall?.AccuracyScore], [t('statFluency'), data.overall?.FluencyScore],
@@ -854,6 +1196,7 @@ body { margin: 0; background: #171b24; }
         }
         const data = await res.json();
         renderDiagnosisBubble(bubbleEl, sentence, data, recordedUrl);
+        recordDiagnosis(data, { mode: 'conversation', sentence, category: null });
         actionWrap.innerHTML = `<div class="cv-btn-row"><button class="cv-btn" id="convNextBtn">${t('nextBtn')}</button></div>`;
         document.getElementById('convNextBtn').addEventListener('click', () => { lineIndex++; showNextLine(); });
       } catch (err) {
@@ -929,13 +1272,17 @@ body { margin: 0; background: #171b24; }
     updateTarget();
     if (lastResultData) renderResult(lastResultData);
 
+    // 커스텀 문장 뷰 갱신
+    updateCustomTarget();
+    updateCustomRecordStatusText();
+
     // 회화 연습 뷰 갱신 (진행 중이던 대화는 언어가 섞이지 않도록 초기화)
     renderScenarios();
     if (currentScenarioKey) { cvThread.innerHTML = ''; lineIndex = 0; showNextLine(); }
   }
 
   // ================= 초기화 =================
-  setMode('sentence');
+  setMode('home');
   setLang(lang);
   updateTarget();
 })();
