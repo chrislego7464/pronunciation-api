@@ -66,12 +66,18 @@ body { margin: 0; background: #171b24; }
 /* ===== 문장 연습 (sd-*) ===== */
 .sd-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
 .sd-card h2 { font-family: var(--serif); font-size: 16.5px; margin: 0 0 12px; }
-.sd-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-.sd-cat-label {
-  font-family: var(--mono); font-size: 11px; letter-spacing: .04em; color: var(--text-faint);
-  margin: 14px 0 6px; text-transform: uppercase;
+.sd-cat-header {
+  display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; margin-top: 8px; font-family: var(--sans); font-size: 13px; color: var(--text-dim);
 }
-.sd-cat-label:first-child { margin-top: 0; }
+.sd-cat-header:first-child { margin-top: 0; }
+.sd-cat-header:hover { border-color: var(--gold); }
+.sd-cat-header .count { font-family: var(--mono); color: var(--text-faint); font-size: 10.5px; margin-left: 6px; }
+.sd-cat-header .chevron { color: var(--text-faint); transition: transform .15s; font-size: 11px; }
+.sd-cat-header.open .chevron { transform: rotate(90deg); }
+.sd-chips { display: none; flex-wrap: wrap; gap: 8px; padding: 10px 2px 4px; }
+.sd-chips.open { display: flex; }
 .sd-chip {
   font-size: 13px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim);
   border-radius: 8px; padding: 7px 12px; cursor: pointer;
@@ -390,6 +396,8 @@ body { margin: 0; background: #171b24; }
     '경음화': RULE_LABELS['경음화'], '비음화': RULE_LABELS['비음화'], '연음': RULE_LABELS['연음'],
     '격음화': RULE_LABELS['격음화'], '유음화': RULE_LABELS['유음화'],
     "조사 '를/을'": { ko: "조사 '를/을'", ja: "助詞「를/을」" },
+    "조사 '은/는'": { ko: "조사 '은/는'", ja: "助詞「은/는」" },
+    "조사 '이/가'": { ko: "조사 '이/가'", ja: "助詞「이/가」" },
   };
 
   function t(key, ...args){
@@ -454,20 +462,29 @@ body { margin: 0; background: #171b24; }
   }
 
   const CURRICULUM = {
-    '경음화': ['저는 학교에 가요.', '학생이 많아요.', '식당에서 밥을 먹어요.', '숙제가 많아요.', '학교 앞에서 만나요.'],
-    '비음화': ['국물이 뜨거워요.', '학년이 어떻게 되세요?', '작년에 만났어요.', '한국말을 잘해요.'],
-    '연음': ['옷이 예뻐요.', '값이 얼마예요?', '이름이 뭐예요?', '직업이 뭐예요?', '책을 읽어요.'],
-    '격음화': ['어떻게 지내요?', '좋고 나빠요.', '그렇지 않아요.', '축하해요!'],
-    '유음화': ['편리해요.', '관리비가 비싸요.', '실내에서 놀아요.'],
-    "조사 '를/을'": ['저는 커피를 좋아해요.', '사과를 먹어요.'],
+    '경음화': ['저는 학교에 가요.', '학생이 많아요.', '식당에서 밥을 먹어요.', '숙제가 많아요.', '학교 앞에서 만나요.', '합격했어요!', '잡지 좀 보여주세요.', '빨리 갑시다.'],
+    '비음화': ['국물이 뜨거워요.', '학년이 어떻게 되세요?', '작년에 만났어요.', '한국말을 잘해요.', '감사합니다.'],
+    '연음': ['옷이 예뻐요.', '값이 얼마예요?', '이름이 뭐예요?', '직업이 뭐예요?', '책을 읽어요.', '생일이 언제예요?'],
+    '격음화': ['어떻게 지내요?', '좋고 나빠요.', '그렇지 않아요.', '축하해요!', '정말 따뜻해요.'],
+    '유음화': ['편리해요.', '관리비가 비싸요.', '실내에서 놀아요.', '설날에 뭐 해요?'],
+    "조사 '를/을'": ['저는 커피를 좋아해요.', '사과를 먹어요.', '책상을 정리해요.'],
+    "조사 '은/는'": ['저는 일본 사람이에요.', '선생님은 친절해요.', '오늘은 날씨가 좋아요.', '동생은 학생이에요.'],
+    "조사 '이/가'": ['날씨가 좋아요.', '동생이 있어요.', '책이 재미있어요.', '선생님이 친절해요.'],
   };
   const chipWrap = document.getElementById('exampleChips');
+  const categoryOpenState = {}; // 기본: 전부 접힘
   function renderChips(){
     chipWrap.innerHTML = '';
     Object.entries(CURRICULUM).forEach(([category, sentences]) => {
-      const label = document.createElement('div'); label.className = 'sd-cat-label'; label.textContent = categoryLabel(category);
-      chipWrap.appendChild(label);
-      const row = document.createElement('div'); row.className = 'sd-chips';
+      const isOpen = !!categoryOpenState[category];
+      const header = document.createElement('div');
+      header.className = 'sd-cat-header' + (isOpen ? ' open' : '');
+      header.innerHTML = `<span>${categoryLabel(category)}<span class="count">(${sentences.length})</span></span><span class="chevron">▸</span>`;
+      header.addEventListener('click', () => { categoryOpenState[category] = !isOpen; renderChips(); });
+      chipWrap.appendChild(header);
+
+      const row = document.createElement('div');
+      row.className = 'sd-chips' + (isOpen ? ' open' : '');
       sentences.forEach(ex => {
         const c = document.createElement('span'); c.className = 'sd-chip'; c.textContent = ex;
         c.addEventListener('click', () => { document.getElementById('sentenceInput').value = ex; updateTarget(); playTTS(ex, c); });
