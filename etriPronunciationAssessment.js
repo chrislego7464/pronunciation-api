@@ -41,14 +41,28 @@ async function assessPronunciationETRI({ audioFilePath, referenceText }) {
     },
   };
 
-  const res = await fetch(ETRI_ENDPOINT_KOR, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json; charset=UTF-8',
-      Authorization: accessKey,
-    },
-    body: JSON.stringify(requestBody),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20초 넘으면 포기
+
+  let res;
+  try {
+    res = await fetch(ETRI_ENDPOINT_KOR, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Authorization: accessKey,
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('ETRI 서버 응답이 20초 넘게 없어서 요청을 취소했습니다. 잠시 후 다시 시도해보세요.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const raw = await res.json();
   if (raw.result !== 0) {
@@ -56,7 +70,21 @@ async function assessPronunciationETRI({ audioFilePath, referenceText }) {
   }
 
   const { recognized, score } = raw.return_object || {};
-  return buildDiagnosis({ recognized, score, referenceText });
+
+  // ETRI가 result:0(성공)이라고 해놓고 score 자리에 XML 에러 응답 조각을
+  // 끼워 넣는 경우가 있다 (서버 쪽 일시적 문제로 추정). 이럴 땐 recognizedText도
+  // 신뢰할 수 없으므로, 그럴듯한 진단 결과를 만들지 말고 명확히 실패 처리한다.
+  if (typeof score === 'string' && score.trim().startsWith('<')) {
+    throw new Error(
+      'ETRI가 정상적인 점수 대신 오류 응답을 반환했습니다 (서버 쪽 일시적 문제로 보입니다). ' +
+      '잠시 후 다시 시도해보세요. 원본 일부: ' + score.slice(0, 80)
+    );
+  }
+
+  const diagnosis = buildDiagnosis({ recognized, score, referenceText });
+  // 디버깅용 — ETRI가 실제로 뭘 돌려주는지 그대로 노출 (score 필드명/타입 확인 후 나중에 제거해도 됨)
+  diagnosis._rawReturnObject = raw.return_object;
+  return diagnosis;
 }
 
 /** ETRI의 recognized 텍스트를 우리 규칙 엔진의 목표 발음과 자모 단위로 비교한다. */
@@ -68,7 +96,7 @@ function buildDiagnosis({ recognized, score, referenceText }) {
     ruleByCharIndex.set(n.pos + 1, n.rule);
   });
 
-  const recognizedText = recognized || '';
+  const recognizedText = (recognized || '').trim();
   const len = Math.max(targetPronunciation.length, recognizedText.length);
   const diffs = [];
   for (let i = 0; i < len; i++) {
@@ -90,8 +118,9 @@ function buildDiagnosis({ recognized, score, referenceText }) {
     }
   }
 
+  const scoreNum = typeof score === 'number' ? score : parseFloat(score);
   return {
-    etriScore: typeof score === 'number' ? score : null, // 1~5
+    etriScore: Number.isFinite(scoreNum) ? scoreNum : null, // 실측: 소수점 있는 연속값 (문서상 1~5 척도)
     recognizedText,
     targetPronunciation,
     diffs,
