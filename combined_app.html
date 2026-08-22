@@ -72,7 +72,13 @@ body { margin: 0; background: #171b24; }
 .consent-box {
   background: #262d40; border: 1.5px solid #414b64; border-radius: 16px;
   padding: 30px 34px; max-width: 420px; width: 100%; box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 20px 60px rgba(0,0,0,0.6);
+  position: relative;
 }
+.auth-close-btn {
+  position: absolute; top: 14px; right: 16px; background: none; border: none;
+  color: var(--text-dim); font-size: 18px; cursor: pointer; line-height: 1; padding: 4px;
+}
+.auth-close-btn:hover { color: var(--text); }
 .consent-box h2 { font-family: var(--serif); font-size: 19px; margin: 0 0 12px; color: var(--text); }
 .consent-box p { font-size: 13.5px; color: #c7ccd6; line-height: 1.7; margin: 0 0 20px; }
 .consent-box .sd-btn { width: 100%; margin-bottom: 8px; }
@@ -348,6 +354,7 @@ body { margin: 0; background: #171b24; }
 
 <div class="consent-overlay" id="authModal" style="display:none">
   <div class="consent-box">
+    <button class="auth-close-btn" id="authCloseBtn" aria-label="close">✕</button>
     <div class="auth-tabs">
       <button class="auth-tab active" id="authTabLogin" data-i18n="authTabLogin"></button>
       <button class="auth-tab" id="authTabSignup" data-i18n="authTabSignup"></button>
@@ -389,11 +396,11 @@ body { margin: 0; background: #171b24; }
     </div>
     <div class="backend-row">
       <span data-i18n="supabaseUrlLabel"></span>
-      <input id="supabaseUrlInput" placeholder="https://xxxx.supabase.co" />
+      <input id="supabaseUrlInput" value="https://pqwduihddfaheskibvwp.supabase.co" placeholder="https://xxxx.supabase.co" />
     </div>
     <div class="backend-row">
       <span data-i18n="supabaseKeyLabel"></span>
-      <input id="supabaseAnonKeyInput" placeholder="anon public key" />
+      <input id="supabaseAnonKeyInput" value="sb_publishable_NVjGmz1a6t_VoIsG2FJhqw_PPK8vaPy" placeholder="anon public key" />
     </div>
   </div>
 
@@ -806,6 +813,7 @@ body { margin: 0; background: #171b24; }
 
   function openAuthModal(){ document.getElementById('authModal').style.display = 'flex'; }
   function closeAuthModal(){ document.getElementById('authModal').style.display = 'none'; }
+  document.getElementById('authCloseBtn').addEventListener('click', closeAuthModal);
 
   let authMode = 'login';
   function setAuthMode(mode){
@@ -813,6 +821,7 @@ body { margin: 0; background: #171b24; }
     document.getElementById('authTabLogin').classList.toggle('active', mode === 'login');
     document.getElementById('authTabSignup').classList.toggle('active', mode === 'signup');
     document.getElementById('authConsentNote').style.display = mode === 'signup' ? 'block' : 'none';
+    document.querySelector('.auth-remember').style.display = mode === 'signup' ? 'none' : 'flex';
     document.getElementById('authSubmitBtn').textContent = t(mode === 'login' ? 'authTabLogin' : 'authTabSignup');
     document.getElementById('authError').style.display = 'none';
   }
@@ -823,7 +832,7 @@ body { margin: 0; background: #171b24; }
   document.getElementById('authSubmitBtn').addEventListener('click', async () => {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
-    const remember = document.getElementById('authRememberMe').checked;
+    const remember = authMode === 'signup' ? true : document.getElementById('authRememberMe').checked;
     const errorEl = document.getElementById('authError');
     errorEl.style.display = 'none';
 
