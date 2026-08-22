@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한국어 발음 쉐도잉</title>
+<style>
+body { margin: 0; background: #171b24; }
+.sd-app {
+  --bg: #171b24;
+  --surface: #1f2430;
+  --surface-2: #272d3c;
+  --border: #383f52;
+  --text: #edf0f5;
+  --text-dim: #98a1b8;
+  --text-faint: #656d84;
+  --gold: #e3b158;
+  --blue: #7fa6e0;
+  --teal: #5cc9a7;
+  --purple: #b58bd8;
+  --rose: #e08fae;
+  --gray: #8890a3;
+  --coral: #e2685a;
+  --serif: "Nanum Myeongjo", "Noto Serif KR", "Apple SD Gothic Neo", serif;
+  --sans: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  border-radius: 16px;
+  padding: 36px 28px;
+  max-width: 720px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+.sd-app * { box-sizing: border-box; }
+
+.sd-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.sd-title {
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+.sd-sub {
+  color: var(--text-dim);
+  font-size: 13.5px;
+  margin: 0 0 20px;
+  max-width: 58ch;
+}
+
+.sd-backend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+.sd-backend-row input {
+  flex: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 6px 9px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.sd-backend-row input:focus { outline: none; border-color: var(--gold); }
+
+.sd-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 18px;
+}
+.sd-card h2 {
+  font-family: var(--serif);
+  font-size: 16.5px;
+  margin: 0 0 12px;
+}
+
+.sd-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.sd-cat-label {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .04em; color: var(--text-faint);
+  margin: 14px 0 6px; text-transform: uppercase;
+}
+.sd-cat-label:first-child { margin-top: 0; }
+.sd-chip {
+  font-size: 13px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.sd-chip:hover { border-color: var(--gold); color: var(--text); }
+.sd-chip.active { border-color: var(--gold); color: var(--gold); }
+
+.sd-sentence-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.sd-sentence-row .sd-input { margin-bottom: 0; flex: 1; }
+.sd-listen-btn {
+  width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--gold); font-size: 16px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.sd-listen-btn:hover { border-color: var(--gold); }
+.sd-listen-btn:disabled { opacity: .4; cursor: not-allowed; }
+.sd-chip.sd-chip-playing { border-color: var(--gold); color: var(--gold); }
+.sd-lang-btn {
+  font-size: 12.5px; font-family: var(--sans); background: var(--surface-2); color: var(--text-dim);
+  border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px; cursor: pointer;
+}
+.sd-lang-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(227,177,88,0.1); }
+
+.sd-input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-family: var(--sans);
+  margin-bottom: 10px;
+}
+.sd-input:focus { outline: none; border-color: var(--gold); }
+
+.sd-target-preview { font-family: var(--serif); font-size: 19px; margin: 10px 0 4px; }
+.sd-target-preview .orig { color: var(--text-faint); font-size: 14px; }
+.sd-target-preview .hl { color: var(--blue); border-bottom: 2px solid var(--blue); }
+.sd-rule-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.sd-rule-tag {
+  font-family: var(--mono); font-size: 11px; border-radius: 999px; padding: 3px 9px; border: 1px solid;
+}
+.sd-rule-tag[data-rule="경음화"]  { color: var(--gold);  border-color: var(--gold); }
+.sd-rule-tag[data-rule="비음화"]  { color: var(--blue);  border-color: var(--blue); }
+.sd-rule-tag[data-rule="연음"]    { color: var(--teal);  border-color: var(--teal); }
+.sd-rule-tag[data-rule="연음(겹받침)"] { color: var(--teal); border-color: var(--teal); }
+.sd-rule-tag[data-rule="격음화"]  { color: var(--purple);border-color: var(--purple); }
+.sd-rule-tag[data-rule="유음화"]  { color: var(--rose);  border-color: var(--rose); }
+.sd-rule-tag[data-rule="ㅎ탈락"]  { color: var(--gray);  border-color: var(--gray); }
+
+.sd-record-row { display: flex; align-items: center; gap: 16px; }
+.sd-mic-btn {
+  width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--coral);
+  background: var(--surface-2); color: var(--coral); font-size: 24px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: transform .1s;
+}
+.sd-mic-btn:hover { transform: scale(1.05); }
+.sd-mic-btn.recording { background: var(--coral); color: var(--surface); animation: sd-pulse 1.4s infinite; }
+@keyframes sd-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(226,104,90,.5); } 50% { box-shadow: 0 0 0 10px rgba(226,104,90,0); } }
+
+.sd-record-meta { flex: 1; }
+.sd-record-status { font-size: 13.5px; color: var(--text-dim); margin-bottom: 6px; }
+.sd-meter { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.sd-meter-fill { height: 100%; background: var(--coral); width: 0%; transition: width .05s linear; }
+
+.sd-playback { margin-top: 14px; }
+.sd-playback audio { width: 100%; height: 34px; }
+
+.sd-btn {
+  background: var(--gold); color: #201705; border: none; border-radius: 8px;
+  padding: 11px 20px; font-size: 14.5px; font-weight: 700; cursor: pointer; font-family: var(--sans);
+}
+.sd-btn:hover { filter: brightness(1.08); }
+.sd-btn:disabled { opacity: .4; cursor: not-allowed; }
+.sd-btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); font-weight: 500; }
+
+.sd-diagnose-row { margin-top: 16px; display: flex; gap: 10px; }
+
+.sd-result { margin-top: 18px; }
+.sd-stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.sd-stat {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; min-width: 90px; text-align: center;
+}
+.sd-stat .num { font-family: var(--serif); font-size: 22px; color: var(--gold); }
+.sd-stat .label { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
+
+.sd-word-card {
+  border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.sd-word-card.flagged { border-color: var(--coral); background: rgba(226,104,90,0.06); }
+.sd-word-text { font-family: var(--serif); font-size: 19px; min-width: 70px; }
+.sd-word-score { font-family: var(--mono); font-size: 13px; color: var(--text-dim); }
+.sd-word-cat { font-family: var(--mono); font-size: 11.5px; color: var(--coral); background: rgba(226,104,90,0.1); border: 1px solid rgba(226,104,90,0.35); border-radius: 999px; padding: 3px 10px; }
+.sd-word-ok { font-family: var(--mono); font-size: 11.5px; color: var(--teal); }
+
+.sd-error-box {
+  background: var(--surface-2); border-left: 2px solid var(--coral); border-radius: 4px;
+  padding: 12px 14px; font-size: 13px; color: var(--text-dim); margin-top: 12px; white-space: pre-line;
+}
+.sd-loading { color: var(--text-dim); font-size: 13.5px; margin-top: 12px; }
+
+@media (max-width: 520px) {
+  .sd-app { padding: 24px 16px; border-radius: 0; }
+  .sd-title { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="sd-app">
+  <div class="sd-lang-toggle">
+    <button class="sd-lang-btn" id="langJa">日本語</button>
+    <button class="sd-lang-btn" id="langKo">한국어</button>
+  </div>
+  <div class="sd-eyebrow" data-i18n="eyebrow"></div>
+  <h1 class="sd-title" data-i18n="title"></h1>
+  <p class="sd-sub" data-i18n="sub"></p>
+
+  <div class="sd-backend-row">
+    <span data-i18n="backendLabel"></span>
+    <input id="backendUrl" value="https://pronunciation-api-is3w.onrender.com" />
+  </div>
+
+  <div class="sd-card">
+    <h2 data-i18n="card1Title"></h2>
+    <div id="exampleChips"></div>
+    <div class="sd-sentence-row">
+      <input class="sd-input" id="sentenceInput" value="저는 학교에 가요.">
+      <button class="sd-listen-btn" id="listenBtn" title="발음 듣기">🔊</button>
+    </div>
+    <div class="sd-target-preview" id="targetPreview"></div>
+    <div class="sd-rule-tags" id="ruleTags"></div>
+  </div>
+
+  <div class="sd-card">
+    <h2 data-i18n="card2Title"></h2>
+    <div class="sd-record-row">
+      <button class="sd-mic-btn" id="micBtn">●</button>
+      <div class="sd-record-meta">
+        <div class="sd-record-status" id="recordStatus"></div>
+        <div class="sd-meter"><div class="sd-meter-fill" id="meterFill"></div></div>
+      </div>
+    </div>
+    <div class="sd-playback" id="playbackWrap" style="display:none">
+      <audio id="playbackAudio" controls></audio>
+    </div>
+  </div>
+
+  <div class="sd-diagnose-row">
+    <button class="sd-btn" id="diagnoseBtn" disabled data-i18n="diagnoseBtn"></button>
+    <button class="sd-btn secondary" id="resetBtn" data-i18n="resetBtn"></button>
+  </div>
+
+  <div class="sd-result" id="resultWrap"></div>
+</div>
+
+<script>
+(function(){
+  // ---------- 규칙 엔진 (검증된 로직 그대로) ----------
+  const BASE = 0xAC00;
+  const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  const JUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+  const JONG = ['', 'ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  const isHangul = ch => { const c = ch.codePointAt(0); return c >= 0xAC00 && c <= 0xD7A3; };
+  const decompose = ch => { const code = ch.codePointAt(0) - BASE; return { cho: CHO[Math.floor(code/28/21)], jung: JUNG[Math.floor(code/28)%21], jong: JONG[code%28] }; };
+  const compose = (cho,jung,jong) => String.fromCodePoint(BASE + (CHO.indexOf(cho)*21 + JUNG.indexOf(jung))*28 + JONG.indexOf(jong||''));
+  const NEUTRALIZE = {'':'','ㄱ':'ㄱ','ㄲ':'ㄱ','ㄳ':'ㄱ','ㄴ':'ㄴ','ㄵ':'ㄴ','ㄶ':'ㄴ','ㄷ':'ㄷ','ㄹ':'ㄹ','ㄺ':'ㄱ','ㄻ':'ㅁ','ㄼ':'ㄹ','ㄽ':'ㄹ','ㄾ':'ㄹ','ㄿ':'ㅂ','ㅀ':'ㄹ','ㅁ':'ㅁ','ㅂ':'ㅂ','ㅄ':'ㅂ','ㅅ':'ㄷ','ㅆ':'ㄷ','ㅇ':'ㅇ','ㅈ':'ㄷ','ㅊ':'ㄷ','ㅋ':'ㄱ','ㅌ':'ㄷ','ㅍ':'ㅂ','ㅎ':'ㄷ'};
+  const COMPOUND_SPLIT = {'ㄳ':['ㄱ','ㅅ'],'ㄵ':['ㄴ','ㅈ'],'ㄶ':['ㄴ','ㅎ'],'ㄺ':['ㄹ','ㄱ'],'ㄻ':['ㄹ','ㅁ'],'ㄼ':['ㄹ','ㅂ'],'ㄽ':['ㄹ','ㅅ'],'ㄾ':['ㄹ','ㅌ'],'ㄿ':['ㄹ','ㅍ'],'ㅀ':['ㄹ','ㅎ'],'ㅄ':['ㅂ','ㅅ']};
+  const TENSE = {'ㄱ':'ㄲ','ㄷ':'ㄸ','ㅂ':'ㅃ','ㅅ':'ㅆ','ㅈ':'ㅉ'};
+  const NASAL = {'ㄱ':'ㅇ','ㄷ':'ㄴ','ㅂ':'ㅁ'};
+  const ASPIRATE = {'ㄱ':'ㅋ','ㄷ':'ㅌ','ㅂ':'ㅍ','ㅈ':'ㅊ'};
+
+  function applyRules(text){
+    const syll = [...text].map(ch => isHangul(ch) ? decompose(ch) : ch);
+    const notes = [];
+    for (let i = 0; i < syll.length - 1; i++){
+      const cur = syll[i], next = syll[i+1];
+      if (typeof cur === 'string' || typeof next === 'string') continue;
+      if (cur.jong === '') continue;
+      if (next.cho === 'ㅇ'){
+        if (cur.jong === 'ㅇ') continue;
+        if (cur.jong === 'ㅎ'){ cur.jong = ''; notes.push({pos:i, rule:'ㅎ탈락'}); continue; }
+        if (cur.jong === 'ㄶ'){ next.cho = 'ㄴ'; cur.jong = ''; notes.push({pos:i, rule:'ㅎ탈락'}); continue; }
+        if (cur.jong === 'ㅀ'){ next.cho = 'ㄹ'; cur.jong = ''; notes.push({pos:i, rule:'ㅎ탈락'}); continue; }
+        if (COMPOUND_SPLIT[cur.jong]){ const [stay, moved] = COMPOUND_SPLIT[cur.jong]; cur.jong = stay; next.cho = moved; notes.push({pos:i, rule:'연음(겹받침)'}); }
+        else { next.cho = cur.jong; cur.jong = ''; notes.push({pos:i, rule:'연음'}); }
+        continue;
+      }
+      if (cur.jong === 'ㅎ' && ASPIRATE[next.cho]){ next.cho = ASPIRATE[next.cho]; cur.jong = ''; notes.push({pos:i, rule:'격음화'}); continue; }
+      { const neu0 = NEUTRALIZE[cur.jong]; if (next.cho === 'ㅎ' && ASPIRATE[neu0]){ next.cho = ASPIRATE[neu0]; cur.jong = ''; notes.push({pos:i, rule:'격음화'}); continue; } }
+      const neu = NEUTRALIZE[cur.jong];
+      if (neu === 'ㄴ' && next.cho === 'ㄹ'){ cur.jong = 'ㄹ'; notes.push({pos:i, rule:'유음화'}); continue; }
+      if (neu === 'ㄹ' && next.cho === 'ㄴ'){ next.cho = 'ㄹ'; notes.push({pos:i, rule:'유음화'}); continue; }
+      if (NASAL[neu] && (next.cho === 'ㄴ' || next.cho === 'ㅁ')){ cur.jong = NASAL[neu]; notes.push({pos:i, rule:'비음화'}); continue; }
+      if (TENSE[next.cho] && ['ㄱ','ㄷ','ㅂ'].includes(neu)){ cur.jong = neu; next.cho = TENSE[next.cho]; notes.push({pos:i, rule:'경음화'}); continue; }
+      if (neu !== cur.jong) cur.jong = neu;
+    }
+    for (let i = 0; i < syll.length; i++){
+      const s = syll[i]; if (typeof s !== 'object') continue;
+      const next = syll[i+1];
+      if (i === syll.length - 1 || typeof next !== 'object') s.jong = NEUTRALIZE[s.jong];
+    }
+    const result = syll.map(s => typeof s === 'string' ? s : compose(s.cho, s.jung, s.jong)).join('');
+    return { result, notes };
+  }
+
+  // ---------- 다국어 (기본값: 日本語 — 실제 대상 사용자 기준) ----------
+  let lang = 'ja';
+  let recordState = 'idle'; // idle | recording | done | denied
+  let lastResultData = null;
+
+  const STRINGS = {
+    eyebrow: { ko: '앱 프로토타입 · 실제 녹음 → 실제 진단', ja: 'アプリ・プロトタイプ ・ 実際に録音 → 実際に診断' },
+    title: { ko: '한국어 발음 쉐도잉', ja: '韓国語発音シャドーイング' },
+    sub: { ko: '문장을 고르고, 마이크로 직접 읽어서 녹음한 뒤, 로컬에서 켜둔 백엔드(Azure 연동)로 진단 결과를 받아옵니다.', ja: '文を選んでマイクで読み上げて録音すると、ローカルで起動しているバックエンド(Azure連携)から診断結果が返ってきます。' },
+    backendLabel: { ko: '백엔드 주소', ja: 'バックエンドのアドレス' },
+    card1Title: { ko: '① 문장 고르기', ja: '① 文を選ぶ' },
+    card2Title: { ko: '② 녹음하기', ja: '② 録音する' },
+    recordIdle: { ko: '마이크 버튼을 눌러 녹음을 시작하세요', ja: 'マイクのボタンを押して録音を始めてください' },
+    recordDenied: { ko: '마이크 권한이 거부됐어요. 브라우저 주소창 옆 마이크 아이콘에서 허용해주세요.', ja: 'マイクの使用が許可されていません。ブラウザのアドレスバー横のマイクのアイコンから許可してください。' },
+    recordingNow: { ko: '녹음 중... 다시 누르면 정지', ja: '録音中... もう一度押すと停止します' },
+    recordDone: { ko: '녹음 완료 — 재생해서 확인하거나 바로 진단하세요', ja: '録音完了 — 再生して確認するか、そのまま診断してください' },
+    diagnoseBtn: { ko: '진단하기', ja: '診断する' },
+    resetBtn: { ko: '다시 녹음', ja: '録音し直す' },
+    diagnosing: { ko: '진단 요청 중...', ja: '診断リクエスト中...' },
+    serverError: { ko: (c) => `서버 응답 오류 (${c})`, ja: (c) => `サーバーエラー (${c})` },
+    connectError: {
+      ko: (m) => `백엔드에 연결하지 못했습니다.\n\n확인할 것:\n1) 로컬 서버가 npm start로 켜져 있는지\n2) 위 "백엔드 주소"가 서버 콘솔에 뜬 주소(예: http://localhost:3001)와 같은지\n3) 브라우저가 로컬 서버로의 연결을 막았을 수 있음 — 이 화면의 개발자 도구(F12) 콘솔에 CORS 관련 에러가 있는지 확인\n\n에러 메시지: ${m}`,
+      ja: (m) => `バックエンドに接続できませんでした。\n\n確認すること:\n1) ローカルサーバーが npm start で起動しているか\n2) 上の「バックエンドのアドレス」がサーバーのコンソールに表示されたアドレス(例: http://localhost:3001)と同じか\n3) ブラウザがローカルサーバーへの接続をブロックしている可能性があります — この画面の開発者ツール(F12)のコンソールにCORS関連のエラーがないか確認してください\n\nエラーメッセージ: ${m}`,
+    },
+    statAccuracy: { ko: '정확도', ja: '正確度' },
+    statFluency: { ko: '유창성', ja: '流暢さ' },
+    statCompleteness: { ko: '완성도', ja: '完成度' },
+    statOverall: { ko: '종합', ja: '総合' },
+    scoreUnit: { ko: '점', ja: '点' },
+    normalLabel: { ko: '정상', ja: '問題なし' },
+    ruleRelated: { ko: (names) => `${names.join(', ')} 관련 발음 흔들림(추정)`, ja: (names) => `${names.join('・')}に関する発音のゆれ(推定)` },
+    genericError: { ko: '규칙 외 발음 오차 — 초성/모음/받침 확인 필요', ja: 'ルール外の発音のずれ — 子音・母音・パッチムを確認' },
+    ttsFailed: { ko: '발음 듣기에 실패했습니다. 백엔드/Azure 설정을 확인해주세요.', ja: '発音の再生に失敗しました。バックエンド/Azureの設定を確認してください。' },
+    ttsLoading: { ko: '재생 준비 중...', ja: '再生準備中...' },
+  };
+
+  // 일본어권 한국어 교재에서 통용되는 한자어 용어. 100% 검증은 못 했으니
+  // 실제 파일럿에서 한국어 교육 전문가에게 최종 확인을 권장.
+  const RULE_LABELS = {
+    '경음화': { ko: '경음화', ja: '濃音化' },
+    '비음화': { ko: '비음화', ja: '鼻音化' },
+    '연음': { ko: '연음', ja: '連音化' },
+    '연음(겹받침)': { ko: '연음(겹받침)', ja: '連音化(二重パッチム)' },
+    '격음화': { ko: '격음화', ja: '激音化' },
+    '유음화': { ko: '유음화', ja: '流音化' },
+    'ㅎ탈락': { ko: 'ㅎ탈락', ja: 'ㅎ(h)の脱落' },
+  };
+  const CATEGORY_LABELS = {
+    '경음화': RULE_LABELS['경음화'],
+    '비음화': RULE_LABELS['비음화'],
+    '연음': RULE_LABELS['연음'],
+    '격음화': RULE_LABELS['격음화'],
+    '유음화': RULE_LABELS['유음화'],
+    "조사 '를/을'": { ko: "조사 '를/을'", ja: "助詞「를/을」" },
+  };
+
+  function t(key, ...args){
+    const entry = STRINGS[key];
+    if (!entry) return key;
+    const val = entry[lang];
+    return typeof val === 'function' ? val(...args) : val;
+  }
+  function ruleLabel(name){ return (RULE_LABELS[name] && RULE_LABELS[name][lang]) || name; }
+  function categoryLabel(name){ return (CATEGORY_LABELS[name] && CATEGORY_LABELS[name][lang]) || name; }
+
+  function applyStaticI18n(){
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  }
+
+  function updateRecordStatusText(){
+    const map = { idle: 'recordIdle', recording: 'recordingNow', done: 'recordDone', denied: 'recordDenied' };
+    document.getElementById('recordStatus').textContent = t(map[recordState]);
+  }
+
+  // ---------- ① 문장 & 목표 발음 ----------
+  // 기획서 7.2 우선순위(평음/경음/격음 → 받침·연음 → 격음화 → 유음화 → 조사 '를')를
+  // 반영한 23개 문장. 전부 엔진으로 규칙이 실제 발동하는지 검증 완료.
+  const CURRICULUM = {
+    '경음화': ['저는 학교에 가요.', '학생이 많아요.', '식당에서 밥을 먹어요.', '숙제가 많아요.', '학교 앞에서 만나요.'],
+    '비음화': ['국물이 뜨거워요.', '학년이 어떻게 되세요?', '작년에 만났어요.', '한국말을 잘해요.'],
+    '연음': ['옷이 예뻐요.', '값이 얼마예요?', '이름이 뭐예요?', '직업이 뭐예요?', '책을 읽어요.'],
+    '격음화': ['어떻게 지내요?', '좋고 나빠요.', '그렇지 않아요.', '축하해요!'],
+    '유음화': ['편리해요.', '관리비가 비싸요.', '실내에서 놀아요.'],
+    "조사 '를/을'": ['저는 커피를 좋아해요.', '사과를 먹어요.'],
+  };
+  const chipWrap = document.getElementById('exampleChips');
+  function renderChips(){
+    chipWrap.innerHTML = '';
+    Object.entries(CURRICULUM).forEach(([category, sentences]) => {
+      const label = document.createElement('div'); label.className = 'sd-cat-label'; label.textContent = categoryLabel(category);
+      chipWrap.appendChild(label);
+      const row = document.createElement('div'); row.className = 'sd-chips';
+      sentences.forEach(ex => {
+        const c = document.createElement('span'); c.className = 'sd-chip'; c.textContent = ex;
+        c.addEventListener('click', () => {
+          document.getElementById('sentenceInput').value = ex;
+          updateTarget();
+          playTTS(ex, c);
+        });
+        row.appendChild(c);
+      });
+      chipWrap.appendChild(row);
+    });
+  }
+  renderChips();
+
+  function updateTarget(){
+    const sentence = document.getElementById('sentenceInput').value.trim();
+    const preview = document.getElementById('targetPreview');
+    const tagWrap = document.getElementById('ruleTags');
+    if (!sentence){ preview.innerHTML = ''; tagWrap.innerHTML = ''; return; }
+    const { result, notes } = applyRules(sentence);
+    const spans = [...result].map((ch, i) => ch !== sentence[i] ? `<span class="hl">${ch}</span>` : ch).join('');
+    preview.innerHTML = `<span class="orig">${sentence}</span><br>${spans}`;
+    tagWrap.innerHTML = '';
+    notes.forEach(n => { const tag = document.createElement('span'); tag.className = 'sd-rule-tag'; tag.dataset.rule = n.rule; tag.textContent = ruleLabel(n.rule); tagWrap.appendChild(tag); });
+  }
+  document.getElementById('sentenceInput').addEventListener('input', updateTarget);
+  updateTarget();
+
+  // ---------- TTS (발음 듣기) ----------
+  const ttsCache = new Map(); // 문장 -> Blob URL, 반복 재생 시 API 재호출 방지
+  const listenBtn = document.getElementById('listenBtn');
+
+  async function playTTS(sentence, triggerEl){
+    if (!sentence) return;
+    if (triggerEl) triggerEl.disabled = true;
+    try {
+      if (ttsCache.has(sentence)) {
+        await new Audio(ttsCache.get(sentence)).play();
+        return;
+      }
+      const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+      const res = await fetch(`${backendUrl}/api/pronunciation/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sentence }),
+      });
+      if (!res.ok) {
+        let detail = '';
+        try { const errJson = await res.json(); detail = errJson.error || ''; } catch (e2) {}
+        throw new Error(`(${res.status}) ${detail}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      ttsCache.set(sentence, url);
+      await new Audio(url).play();
+    } catch (err) {
+      console.error(err);
+      alert(t('ttsFailed') + '\n\n' + err.message);
+    } finally {
+      if (triggerEl) triggerEl.disabled = false;
+    }
+  }
+
+  listenBtn.addEventListener('click', () => {
+    playTTS(document.getElementById('sentenceInput').value.trim(), listenBtn);
+  });
+
+  // ---------- ② 녹음 (16kHz mono WAV로 직접 인코딩) ----------
+  let audioContext, sourceNode, processorNode, gainNode, mediaStream;
+  let recordedChunks = [];
+  let recordedWavBlob = null;
+  let recording = false;
+
+  const micBtn = document.getElementById('micBtn');
+  const recordStatus = document.getElementById('recordStatus');
+  const meterFill = document.getElementById('meterFill');
+  const playbackWrap = document.getElementById('playbackWrap');
+  const playbackAudio = document.getElementById('playbackAudio');
+  const diagnoseBtn = document.getElementById('diagnoseBtn');
+
+  function encodeWav(chunks, sampleRate){
+    let total = 0; chunks.forEach(c => total += c.length);
+    const merged = new Float32Array(total);
+    let off = 0; chunks.forEach(c => { merged.set(c, off); off += c.length; });
+
+    const buffer = new ArrayBuffer(44 + merged.length * 2);
+    const view = new DataView(buffer);
+    function writeStr(o, s){ for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); }
+    writeStr(0, 'RIFF'); view.setUint32(4, 36 + merged.length * 2, true); writeStr(8, 'WAVE');
+    writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+    writeStr(36, 'data'); view.setUint32(40, merged.length * 2, true);
+    let idx = 44;
+    for (let i = 0; i < merged.length; i++, idx += 2){
+      let s = Math.max(-1, Math.min(1, merged[i]));
+      view.setInt16(idx, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+    return new Blob([view], { type: 'audio/wav' });
+  }
+
+  async function startRecording(){
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } });
+    } catch (err) {
+      recordState = 'denied';
+      updateRecordStatusText();
+      return;
+    }
+    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    sourceNode = audioContext.createMediaStreamSource(mediaStream);
+    processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+    gainNode = audioContext.createGain();
+    gainNode.gain.value = 0; // 스피커로 안 들리게(에코 방지), 그래도 그래프는 연결해둬야 onaudioprocess가 돈다
+    recordedChunks = [];
+
+    processorNode.onaudioprocess = (e) => {
+      const input = e.inputBuffer.getChannelData(0);
+      recordedChunks.push(new Float32Array(input));
+      let sum = 0; for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+      const rms = Math.sqrt(sum / input.length);
+      meterFill.style.width = Math.min(100, rms * 400) + '%';
+    };
+
+    sourceNode.connect(processorNode);
+    processorNode.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    recording = true;
+    micBtn.classList.add('recording');
+    micBtn.textContent = '■';
+    recordState = 'recording';
+    updateRecordStatusText();
+    playbackWrap.style.display = 'none';
+    diagnoseBtn.disabled = true;
+  }
+
+  function stopRecording(){
+    recording = false;
+    micBtn.classList.remove('recording');
+    micBtn.textContent = '●';
+    meterFill.style.width = '0%';
+
+    processorNode.disconnect(); sourceNode.disconnect(); gainNode.disconnect();
+    mediaStream.getTracks().forEach(t => t.stop());
+    const sampleRate = audioContext.sampleRate;
+    audioContext.close();
+
+    recordedWavBlob = encodeWav(recordedChunks, sampleRate);
+    playbackAudio.src = URL.createObjectURL(recordedWavBlob);
+    playbackWrap.style.display = 'block';
+    recordState = 'done';
+    updateRecordStatusText();
+    diagnoseBtn.disabled = false;
+  }
+
+  micBtn.addEventListener('click', () => { recording ? stopRecording() : startRecording(); });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    recordedWavBlob = null;
+    playbackWrap.style.display = 'none';
+    recordState = 'idle';
+    updateRecordStatusText();
+    diagnoseBtn.disabled = true;
+    lastResultData = null;
+    document.getElementById('resultWrap').innerHTML = '';
+  });
+
+  // ---------- 진단 요청 ----------
+  diagnoseBtn.addEventListener('click', async () => {
+    const sentence = document.getElementById('sentenceInput').value.trim();
+    const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+    const resultWrap = document.getElementById('resultWrap');
+    if (!recordedWavBlob || !sentence) return;
+
+    resultWrap.innerHTML = `<div class="sd-loading">${t('diagnosing')}</div>`;
+    diagnoseBtn.disabled = true;
+
+    try {
+      const form = new FormData();
+      form.append('audio', recordedWavBlob, 'attempt.wav');
+      form.append('sentence', sentence);
+
+      const res = await fetch(`${backendUrl}/api/pronunciation/assess`, { method: 'POST', body: form });
+      if (!res.ok) throw new Error(t('serverError', res.status));
+      const data = await res.json();
+      lastResultData = data;
+      renderResult(data);
+    } catch (err) {
+      resultWrap.innerHTML = `<div class="sd-error-box">${t('connectError', err.message)}</div>`;
+    } finally {
+      diagnoseBtn.disabled = false;
+    }
+  });
+
+  function renderResult(data){
+    const resultWrap = document.getElementById('resultWrap');
+    resultWrap.innerHTML = '';
+
+    const stats = [
+      [t('statAccuracy'), data.overall?.AccuracyScore],
+      [t('statFluency'), data.overall?.FluencyScore],
+      [t('statCompleteness'), data.overall?.CompletenessScore],
+      [t('statOverall'), data.overall?.PronScore],
+    ];
+    const statRow = document.createElement('div'); statRow.className = 'sd-stat-row';
+    stats.forEach(([label, val]) => {
+      const s = document.createElement('div'); s.className = 'sd-stat';
+      s.innerHTML = `<div class="num">${val ?? '–'}</div><div class="label">${label}</div>`;
+      statRow.appendChild(s);
+    });
+    resultWrap.appendChild(statRow);
+
+    (data.words || []).forEach(w => {
+      const flagged = !!w.estimatedCategory; // 서버가 관련 규칙+임계값으로 이미 판정한 결과
+      const card = document.createElement('div');
+      card.className = 'sd-word-card' + (flagged ? ' flagged' : '');
+      const relatedRules = w.relatedRules || [];
+      const ruleTags = relatedRules.map(r => `<span class="sd-rule-tag" data-rule="${r}">${ruleLabel(r)}</span>`).join('');
+      // estimatedCategory 자체는 서버가 한국어로 만든 문자열이라, 언어 전환에 맞춰
+      // relatedRules(원본 규칙명 배열)로부터 우리가 직접 라벨을 다시 구성한다.
+      const categoryText = flagged
+        ? (relatedRules.length ? t('ruleRelated', relatedRules.map(ruleLabel)) : t('genericError'))
+        : null;
+      card.innerHTML = `
+        <span class="sd-word-text">${w.word}</span>
+        <span class="sd-word-score">${w.accuracyScore ?? '–'}${t('scoreUnit')}</span>
+        ${ruleTags}
+        ${categoryText ? `<span class="sd-word-cat">${categoryText}</span>` : `<span class="sd-word-ok">${t('normalLabel')}</span>`}
+      `;
+      resultWrap.appendChild(card);
+    });
+  }
+
+  document.getElementById('langJa').addEventListener('click', () => setLang('ja'));
+  document.getElementById('langKo').addEventListener('click', () => setLang('ko'));
+  function setLang(next){
+    lang = next;
+    document.getElementById('langJa').classList.toggle('active', lang === 'ja');
+    document.getElementById('langKo').classList.toggle('active', lang === 'ko');
+    applyStaticI18n();
+    updateRecordStatusText();
+    renderChips();
+    updateTarget();
+    if (lastResultData) renderResult(lastResultData);
+  }
+  setLang(lang);
+})();
+</script>
+</body>
+</html>
