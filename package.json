@@ -1,0 +1,16 @@
+{
+  "name": "pronunciation-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "일본인 학습자용 한국어 발음 진단 백엔드 (0-B 기술 스파이크용)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "microsoft-cognitiveservices-speech-sdk": "^1.40.0",
+    "multer": "^1.4.5-lts.1"
+  }
+}
