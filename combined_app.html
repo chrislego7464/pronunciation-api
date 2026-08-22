@@ -7,7 +7,7 @@
 <title>한국어 발음 쉐도잉</title>
 <style>
 body { margin: 0; background: #171b24; }
-.app-shell {
+:root {
   --bg: #171b24;
   --surface: #1f2430;
   --surface-2: #272d3c;
@@ -25,7 +25,8 @@ body { margin: 0; background: #171b24; }
   --serif: "Nanum Myeongjo", "Noto Serif KR", "Apple SD Gothic Neo", serif;
   --sans: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-
+}
+.app-shell {
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
@@ -35,7 +36,7 @@ body { margin: 0; background: #171b24; }
   margin: 0 auto;
   line-height: 1.6;
 }
-.app-shell * { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
 
 .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .lang-toggle { display: flex; gap: 6px; }
@@ -69,21 +70,47 @@ body { margin: 0; background: #171b24; }
   display: flex; align-items: center; justify-content: center; padding: 24px;
 }
 .consent-box {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-  padding: 28px; max-width: 420px; width: 100%;
+  background: #262d40; border: 1.5px solid #414b64; border-radius: 16px;
+  padding: 30px 34px; max-width: 420px; width: 100%; box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 20px 60px rgba(0,0,0,0.6);
 }
 .consent-box h2 { font-family: var(--serif); font-size: 19px; margin: 0 0 12px; color: var(--text); }
-.consent-box p { font-size: 13.5px; color: var(--text-dim); line-height: 1.7; margin: 0 0 20px; }
+.consent-box p { font-size: 13.5px; color: #c7ccd6; line-height: 1.7; margin: 0 0 20px; }
 .consent-box .sd-btn { width: 100%; margin-bottom: 8px; }
 
-.auth-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.auth-tabs { display: flex; gap: 6px; margin-bottom: 18px; }
 .auth-tab {
-  flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
-  padding: 9px; font-size: 13.5px; font-weight: 600; color: var(--text-dim); cursor: pointer; font-family: var(--sans);
+  flex: 1; background: #3a4258; border: 2px solid transparent; border-radius: 8px;
+  padding: 10px; font-size: 14px; font-weight: 700; color: #d7dbe3; cursor: pointer; font-family: var(--sans);
 }
-.auth-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(227,177,88,0.08); }
-.auth-remember { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-dim); cursor: pointer; }
-.auth-error { color: var(--coral); font-size: 12.5px; margin-top: 10px; }
+.auth-tab.active { background: var(--gold); color: #201705; box-shadow: 0 3px 10px rgba(227,177,88,0.4); }
+.auth-field-label {
+  display: block; font-family: var(--sans); font-size: 12.5px; color: var(--text); font-weight: 700;
+  letter-spacing: .02em; margin: 0 0 6px;
+}
+.auth-remember { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text); cursor: pointer; margin-top: 4px; }
+.auth-checkbox-native { position: absolute; opacity: 0; width: 0; height: 0; }
+.auth-checkbox-box {
+  width: 20px; height: 20px; border-radius: 5px; border: 2px solid #8a90a0; background: #eef0f4;
+  flex-shrink: 0; position: relative; transition: background .15s, border-color .15s;
+}
+.auth-checkbox-native:checked + .auth-checkbox-box {
+  background: #2563eb; border-color: #2563eb;
+}
+.auth-checkbox-native:checked + .auth-checkbox-box::after {
+  content: ''; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px;
+  border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+
+.consent-box .sd-input-editable { border-radius: 999px; padding: 13px 20px; }
+.consent-box .sd-btn { border-radius: 999px; }
+.consent-box .auth-tab { border-radius: 999px; }
+.auth-guest-link {
+  display: block; width: 100%; text-align: center; background: none; border: none;
+  color: var(--text-dim); font-size: 13px; font-family: var(--sans); cursor: pointer;
+  margin-top: 14px; padding: 6px; text-decoration: underline; text-underline-offset: 3px;
+}
+.auth-guest-link:hover { color: var(--gold); }
+.auth-error { color: var(--coral); font-size: 13px; margin-top: 10px; font-weight: 600; }
 
 .account-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -194,7 +221,8 @@ body { margin: 0; background: #171b24; }
 }
 .sd-btn:hover { filter: brightness(1.08); }
 .sd-btn:disabled { opacity: .4; cursor: not-allowed; }
-.sd-btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); font-weight: 500; }
+.sd-btn.secondary { background: #3a4258; border: 2px solid transparent; color: #eef0f4; font-weight: 700; }
+.sd-btn.secondary:hover { border-color: var(--gold); color: var(--gold); }
 .sd-diagnose-row { margin-top: 16px; display: flex; gap: 10px; }
 
 .sd-result { margin-top: 18px; }
@@ -219,11 +247,11 @@ body { margin: 0; background: #171b24; }
 .ja-translate-value { font-family: var(--serif); color: var(--text); }
 .ja-translate-value.faint { color: var(--text-dim); font-family: var(--sans); font-size: 13px; }
 .sd-input-editable {
-  flex: 1; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
-  border-radius: 8px; padding: 10px 12px; font-size: 15px; font-family: var(--sans);
+  flex: 1; background: #eef0f4; border: 2px solid transparent; color: #1a1d24;
+  border-radius: 8px; padding: 11px 13px; font-size: 15px; font-family: var(--sans);
 }
 .sd-input-editable:focus { outline: none; border-color: var(--gold); }
-.sd-input-editable::placeholder { color: var(--text-faint); }
+.sd-input-editable::placeholder { color: #565d6b; }
 
 .an-stat-row { display: flex; gap: 10px; margin-bottom: 16px; }
 .an-stat { flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
@@ -325,15 +353,18 @@ body { margin: 0; background: #171b24; }
       <button class="auth-tab" id="authTabSignup" data-i18n="authTabSignup"></button>
     </div>
     <p class="sd-custom-hint" id="authConsentNote" data-i18n="authConsentNote" style="display:none"></p>
-    <input class="sd-input-editable" id="authEmail" type="email" data-i18n="authEmailPlaceholder" style="width:100%; margin-bottom:8px;">
-    <input class="sd-input-editable" id="authPassword" type="password" data-i18n="authPasswordPlaceholder" style="width:100%; margin-bottom:8px;">
+    <span class="auth-field-label" data-i18n="authEmailPlaceholder"></span>
+    <input class="sd-input-editable" id="authEmail" type="email" style="width:100%; margin-bottom:14px;">
+    <span class="auth-field-label" data-i18n="authPasswordPlaceholder"></span>
+    <input class="sd-input-editable" id="authPassword" type="password" style="width:100%; margin-bottom:14px;">
     <label class="auth-remember">
-      <input type="checkbox" id="authRememberMe" checked>
+      <input type="checkbox" id="authRememberMe" checked class="auth-checkbox-native">
+      <span class="auth-checkbox-box"></span>
       <span data-i18n="rememberMe"></span>
     </label>
     <div id="authError" class="auth-error" style="display:none"></div>
     <button class="sd-btn" id="authSubmitBtn" style="width:100%; margin-top:12px;"></button>
-    <button class="sd-btn secondary" id="authGuestBtn" data-i18n="continueAsGuest" style="width:100%; margin-top:8px;"></button>
+    <button class="auth-guest-link" id="authGuestBtn" data-i18n="continueAsGuest"></button>
   </div>
 </div>
 
