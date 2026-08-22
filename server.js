@@ -8,6 +8,7 @@ const { assessPronunciationFromFile, annotateWithPhonology } = require('./azureP
 const { assessPronunciationETRI } = require('./etriPronunciationAssessment');
 const { synthesizeSpeech } = require('./azureTextToSpeech');
 const { translateText } = require('./azureTranslate');
+const { saveHistoryRecord } = require('./historyStore');
 const { applyRules } = require('./koreanPhonology');
 
 const app = express();
@@ -79,6 +80,40 @@ app.post('/api/translate', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: String((err && err.message) || err) });
+  }
+});
+
+/**
+ * POST /api/history  (multipart/form-data)
+ * fields: audio(선택), userId, mode, sentence, category(선택), lang,
+ *         overall(JSON 문자열), ruleHits(JSON 문자열)
+ * -> 진단 메타데이터 + 녹음 파일을 Supabase에 중앙 저장한다.
+ *    (참가자 동의를 받은 뒤에만 프론트에서 호출해야 한다 — 화면 쪽에 이미
+ *    동의 게이트를 넣어뒀다.)
+ */
+app.post('/api/history', upload.single('audio'), async (req, res) => {
+  const { userId, mode, sentence, category, lang, overall, ruleHits } = req.body || {};
+  if (!userId || !mode || !sentence) {
+    return res.status(400).json({ error: 'userId, mode, sentence가 필요합니다.' });
+  }
+  try {
+    let audioBuffer = null;
+    if (req.file) audioBuffer = fs.readFileSync(req.file.path);
+
+    const result = await saveHistoryRecord({
+      userId, mode, sentence,
+      category: category || null,
+      lang: lang || null,
+      overall: overall ? JSON.parse(overall) : {},
+      ruleHits: ruleHits ? JSON.parse(ruleHits) : [],
+      audioBuffer,
+    });
+    res.json({ ok: true, audioPath: result.audioPath });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: String((err && err.message) || err) });
+  } finally {
+    if (req.file) fs.unlink(req.file.path, () => {});
   }
 });
 

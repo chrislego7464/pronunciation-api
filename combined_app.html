@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>한국어 발음 쉐도잉</title>
 <style>
@@ -62,6 +63,33 @@ body { margin: 0; background: #171b24; }
   border-radius: 6px; padding: 6px 9px; font-family: var(--mono); font-size: 12px;
 }
 .backend-row input:focus { outline: none; border-color: var(--gold); }
+
+.consent-overlay {
+  position: fixed; inset: 0; background: rgba(10,12,18,0.92); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.consent-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 28px; max-width: 420px; width: 100%;
+}
+.consent-box h2 { font-family: var(--serif); font-size: 19px; margin: 0 0 12px; color: var(--text); }
+.consent-box p { font-size: 13.5px; color: var(--text-dim); line-height: 1.7; margin: 0 0 20px; }
+.consent-box .sd-btn { width: 100%; margin-bottom: 8px; }
+
+.auth-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.auth-tab {
+  flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px; font-size: 13.5px; font-weight: 600; color: var(--text-dim); cursor: pointer; font-family: var(--sans);
+}
+.auth-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(227,177,88,0.08); }
+.auth-remember { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-dim); cursor: pointer; }
+.auth-error { color: var(--coral); font-size: 12.5px; margin-top: 10px; }
+
+.account-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--text-dim);
+}
 
 .back-btn {
   display: inline-flex; align-items: center; gap: 6px;
@@ -290,6 +318,25 @@ body { margin: 0; background: #171b24; }
 </head>
 <body>
 
+<div class="consent-overlay" id="authModal" style="display:none">
+  <div class="consent-box">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="authTabLogin" data-i18n="authTabLogin"></button>
+      <button class="auth-tab" id="authTabSignup" data-i18n="authTabSignup"></button>
+    </div>
+    <p class="sd-custom-hint" id="authConsentNote" data-i18n="authConsentNote" style="display:none"></p>
+    <input class="sd-input-editable" id="authEmail" type="email" data-i18n="authEmailPlaceholder" style="width:100%; margin-bottom:8px;">
+    <input class="sd-input-editable" id="authPassword" type="password" data-i18n="authPasswordPlaceholder" style="width:100%; margin-bottom:8px;">
+    <label class="auth-remember">
+      <input type="checkbox" id="authRememberMe" checked>
+      <span data-i18n="rememberMe"></span>
+    </label>
+    <div id="authError" class="auth-error" style="display:none"></div>
+    <button class="sd-btn" id="authSubmitBtn" style="width:100%; margin-top:12px;"></button>
+    <button class="sd-btn secondary" id="authGuestBtn" data-i18n="continueAsGuest" style="width:100%; margin-top:8px;"></button>
+  </div>
+</div>
+
 <div class="app-shell">
   <div class="top-bar">
     <div class="lang-toggle">
@@ -299,9 +346,24 @@ body { margin: 0; background: #171b24; }
     <button class="settings-toggle" id="settingsToggleBtn" title="설정">⚙️</button>
   </div>
 
-  <div class="backend-row" id="backendRow" style="display:none">
-    <span data-i18n="backendLabel"></span>
-    <input id="backendUrl" value="https://pronunciation-api-is3w.onrender.com" />
+  <div class="account-bar" id="accountBar">
+    <span id="accountStatus"></span>
+    <button class="sd-btn secondary" id="accountActionBtn"></button>
+  </div>
+
+  <div id="settingsPanel" style="display:none">
+    <div class="backend-row">
+      <span data-i18n="backendLabel"></span>
+      <input id="backendUrl" value="https://pronunciation-api-is3w.onrender.com" />
+    </div>
+    <div class="backend-row">
+      <span data-i18n="supabaseUrlLabel"></span>
+      <input id="supabaseUrlInput" placeholder="https://xxxx.supabase.co" />
+    </div>
+    <div class="backend-row">
+      <span data-i18n="supabaseKeyLabel"></span>
+      <input id="supabaseAnonKeyInput" placeholder="anon public key" />
+    </div>
   </div>
 
   <button class="back-btn" id="backBtn" style="display:none">← <span data-i18n="backBtnLabel"></span></button>
@@ -556,6 +618,24 @@ body { margin: 0; background: #171b24; }
     backTranslateLabel: { ko: '역번역 확인', ja: '訳し戻し確認' },
     useTranslationBtn: { ko: '이 문장으로 연습하기', ja: 'この文で練習する' },
     translateFailed: { ko: '번역 실패', ja: '翻訳失敗' },
+    authTabLogin: { ko: '로그인', ja: 'ログイン' },
+    authTabSignup: { ko: '회원가입', ja: '会員登録' },
+    authConsentNote: {
+      ko: '회원가입하면 학습 기록(점수, 발음 오류 유형)과 녹음 파일이 연구/개선 목적으로 계정에 저장되는 것에 동의하는 것으로 간주됩니다. 실명이나 연락처는 요구하지 않습니다.',
+      ja: '会員登録すると、学習記録(スコア、発音の誤りの種類)と録音ファイルが研究・改善目的でアカウントに保存されることに同意したものとみなされます。実名や連絡先は求めません。',
+    },
+    authEmailPlaceholder: { ko: '이메일', ja: 'メールアドレス' },
+    authPasswordPlaceholder: { ko: '비밀번호 (6자 이상)', ja: 'パスワード（6文字以上）' },
+    rememberMe: { ko: '로그인 상태 유지', ja: 'ログイン状態を保持する' },
+    continueAsGuest: { ko: '게스트로 계속하기 (기록 저장 안 됨)', ja: 'ゲストとして続ける（記録は保存されません）' },
+    guestStatus: { ko: '게스트로 이용 중 (기록 저장 안 됨)', ja: 'ゲストとして利用中（記録は保存されません）' },
+    loggedInAs: { ko: (email) => `${email}님으로 로그인됨`, ja: (email) => `${email} でログイン中` },
+    loginSignupBtn: { ko: '로그인 / 회원가입', ja: 'ログイン / 会員登録' },
+    logoutBtn: { ko: '로그아웃', ja: 'ログアウト' },
+    supabaseUrlLabel: { ko: 'Supabase URL', ja: 'Supabase URL' },
+    supabaseKeyLabel: { ko: 'Supabase Anon Key', ja: 'Supabase Anon Key' },
+    supabaseNotConfigured: { ko: '⚙️ 설정에서 Supabase URL/Key를 먼저 입력해주세요.', ja: '⚙️ 設定でSupabase URL/Keyを先に入力してください。' },
+    noHistoryYetGuest: { ko: '게스트 모드예요 — 로그인하면 학습 기록이 쌓이기 시작해요.', ja: 'ゲストモードです — ログインすると学習記録が溜まり始めます。' },
     totalPractice: { ko: '총 연습 횟수', ja: '総練習回数' },
     avgScore: { ko: '평균 점수', ja: '平均点' },
     resetHistory: { ko: '기록 초기화', ja: '記録をリセット' },
@@ -643,7 +723,105 @@ body { margin: 0; background: #171b24; }
     for (const [cat, list] of Object.entries(CURRICULUM)) { if (list.includes(sentence)) return cat; }
     return null; // 커리큘럼에 없으면 커스텀 입력으로 간주
   }
-  function recordDiagnosis(data, meta){
+  // ================= Supabase Auth (로그인/회원가입/게스트) =================
+  let supabaseAuthClient = null;
+  let currentSession = null;
+  let useLocalStorageForSession = localStorage.getItem('remember_me_pref') !== 'no'; // 기본값: 유지
+
+  function getAuthClient(){
+    if (supabaseAuthClient) return supabaseAuthClient;
+    const url = document.getElementById('supabaseUrlInput').value.trim();
+    const key = document.getElementById('supabaseAnonKeyInput').value.trim();
+    if (!url || !key) return null;
+    const dynamicStorage = {
+      getItem: (k) => (useLocalStorageForSession ? localStorage : sessionStorage).getItem(k),
+      setItem: (k, v) => (useLocalStorageForSession ? localStorage : sessionStorage).setItem(k, v),
+      removeItem: (k) => (useLocalStorageForSession ? localStorage : sessionStorage).removeItem(k),
+    };
+    supabaseAuthClient = supabase.createClient(url, key, {
+      auth: { storage: dynamicStorage, persistSession: true, autoRefreshToken: true },
+    });
+    supabaseAuthClient.auth.onAuthStateChange((_event, session) => {
+      currentSession = session;
+      updateAccountUI();
+    });
+    return supabaseAuthClient;
+  }
+
+  function isLoggedIn(){ return !!(currentSession && currentSession.user); }
+  function currentUserId(){ return isLoggedIn() ? currentSession.user.id : null; }
+  function currentUserEmail(){ return isLoggedIn() ? currentSession.user.email : null; }
+
+  function updateAccountUI(){
+    const statusEl = document.getElementById('accountStatus');
+    const actionBtn = document.getElementById('accountActionBtn');
+    if (isLoggedIn()) {
+      statusEl.textContent = t('loggedInAs', currentUserEmail());
+      actionBtn.textContent = t('logoutBtn');
+      actionBtn.onclick = doLogout;
+    } else {
+      statusEl.textContent = t('guestStatus');
+      actionBtn.textContent = t('loginSignupBtn');
+      actionBtn.onclick = openAuthModal;
+    }
+  }
+
+  async function doLogout(){
+    const client = getAuthClient();
+    if (client) await client.auth.signOut();
+    currentSession = null;
+    updateAccountUI();
+  }
+
+  function openAuthModal(){ document.getElementById('authModal').style.display = 'flex'; }
+  function closeAuthModal(){ document.getElementById('authModal').style.display = 'none'; }
+
+  let authMode = 'login';
+  function setAuthMode(mode){
+    authMode = mode;
+    document.getElementById('authTabLogin').classList.toggle('active', mode === 'login');
+    document.getElementById('authTabSignup').classList.toggle('active', mode === 'signup');
+    document.getElementById('authConsentNote').style.display = mode === 'signup' ? 'block' : 'none';
+    document.getElementById('authSubmitBtn').textContent = t(mode === 'login' ? 'authTabLogin' : 'authTabSignup');
+    document.getElementById('authError').style.display = 'none';
+  }
+  document.getElementById('authTabLogin').addEventListener('click', () => setAuthMode('login'));
+  document.getElementById('authTabSignup').addEventListener('click', () => setAuthMode('signup'));
+  document.getElementById('authGuestBtn').addEventListener('click', closeAuthModal);
+
+  document.getElementById('authSubmitBtn').addEventListener('click', async () => {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const remember = document.getElementById('authRememberMe').checked;
+    const errorEl = document.getElementById('authError');
+    errorEl.style.display = 'none';
+
+    const client = getAuthClient();
+    if (!client) {
+      errorEl.textContent = t('supabaseNotConfigured');
+      errorEl.style.display = 'block';
+      return;
+    }
+    useLocalStorageForSession = remember;
+    localStorage.setItem('remember_me_pref', remember ? 'yes' : 'no');
+
+    try {
+      const { data, error } = authMode === 'login'
+        ? await client.auth.signInWithPassword({ email, password })
+        : await client.auth.signUp({ email, password });
+      if (error) throw error;
+      currentSession = data.session;
+      updateAccountUI();
+      closeAuthModal();
+    } catch (err) {
+      errorEl.textContent = err.message || String(err);
+      errorEl.style.display = 'block';
+    }
+  });
+
+  function recordDiagnosis(data, meta, audioBlob){
+    if (!isLoggedIn()) return; // 게스트는 기록을 남기지 않는다 (로컬/서버 둘 다)
+
     const words = data.words || [];
     const ruleHits = [];
     words.forEach(w => (w.relatedRules || []).forEach(r => {
@@ -653,13 +831,26 @@ body { margin: 0; background: #171b24; }
       ts: Date.now(), mode: meta.mode, sentence: meta.sentence, category: meta.category,
       overall: data.overall || {}, ruleHits,
     });
+
+    const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+    const form = new FormData();
+    if (audioBlob) form.append('audio', audioBlob, 'attempt.wav');
+    form.append('userId', currentUserId());
+    form.append('mode', meta.mode);
+    form.append('sentence', meta.sentence);
+    if (meta.category) form.append('category', meta.category);
+    form.append('lang', lang);
+    form.append('overall', JSON.stringify(data.overall || {}));
+    form.append('ruleHits', JSON.stringify(ruleHits));
+    fetch(`${backendUrl}/api/history`, { method: 'POST', body: form })
+      .catch(err => console.error('중앙 기록 업로드 실패(로컬 기록은 정상 저장됨):', err));
   }
 
   function renderAnalytics(){
     const hist = loadHistory();
     const wrap = document.getElementById('analyticsWrap');
     if (hist.length === 0){
-      wrap.innerHTML = `<div class="an-empty">${t('noHistoryYet')}</div>`;
+      wrap.innerHTML = `<div class="an-empty">${isLoggedIn() ? t('noHistoryYet') : t('noHistoryYetGuest')}</div>`;
       return;
     }
     const totalCount = hist.length;
@@ -726,9 +917,9 @@ body { margin: 0; background: #171b24; }
   document.getElementById('backBtn').addEventListener('click', () => setMode('home'));
 
   document.getElementById('settingsToggleBtn').addEventListener('click', () => {
-    const row = document.getElementById('backendRow');
-    const isOpen = row.style.display !== 'none';
-    row.style.display = isOpen ? 'none' : 'flex';
+    const panel = document.getElementById('settingsPanel');
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
     document.getElementById('settingsToggleBtn').classList.toggle('active', !isOpen);
   });
 
@@ -977,7 +1168,7 @@ body { margin: 0; background: #171b24; }
       const data = await res.json();
       lastResultData = data;
       renderResult(data);
-      recordDiagnosis(data, { mode: 'sentence', sentence, category: findCategoryOf(sentence) });
+      recordDiagnosis(data, { mode: 'sentence', sentence, category: findCategoryOf(sentence) }, spRecordedWavBlob);
     } catch (err) {
       resultWrap.innerHTML = `<div class="sd-error-box">${t('connectError', err.message)}</div>`;
     } finally {
@@ -1055,7 +1246,7 @@ body { margin: 0; background: #171b24; }
       if (!res.ok) throw new Error(t('serverError', res.status));
       const data = await res.json();
       renderResult(data, resultWrap);
-      recordDiagnosis(data, { mode: 'custom', sentence, category: null });
+      recordDiagnosis(data, { mode: 'custom', sentence, category: null }, cuRecordedWavBlob);
     } catch (err) {
       resultWrap.innerHTML = `<div class="sd-error-box">${t('connectError', err.message)}</div>`;
     } finally {
@@ -1270,7 +1461,7 @@ body { margin: 0; background: #171b24; }
         }
         const data = await res.json();
         renderDiagnosisBubble(bubbleEl, sentence, data, recordedUrl);
-        recordDiagnosis(data, { mode: 'conversation', sentence, category: null });
+        recordDiagnosis(data, { mode: 'conversation', sentence, category: null }, recordedWavBlob);
         actionWrap.innerHTML = `<div class="cv-btn-row"><button class="cv-btn" id="convNextBtn">${t('nextBtn')}</button></div>`;
         document.getElementById('convNextBtn').addEventListener('click', () => { lineIndex++; showNextLine(); });
       } catch (err) {
@@ -1339,6 +1530,8 @@ body { margin: 0; background: #171b24; }
     document.getElementById('langJa').classList.toggle('active', lang === 'ja');
     document.getElementById('langKo').classList.toggle('active', lang === 'ko');
     applyStaticI18n();
+    updateAccountUI();
+    setAuthMode(authMode);
 
     // 문장 연습 뷰 갱신
     updateRecordStatusText();
@@ -1356,8 +1549,18 @@ body { margin: 0; background: #171b24; }
   }
 
   // ================= 초기화 =================
+  async function initAuth(){
+    const client = getAuthClient();
+    if (!client) { updateAccountUI(); return; } // 아직 설정 안 됨 → 게스트 상태로 표시
+    const { data } = await client.auth.getSession();
+    currentSession = data.session;
+    updateAccountUI();
+  }
+  initAuth();
+
   setMode('home');
   setLang(lang);
+  setAuthMode('login');
   updateTarget();
 })();
 </script>
