@@ -66,43 +66,51 @@ body { margin: 0; background: #171b24; }
 /* ===== 문장 연습 (sd-*) ===== */
 .sd-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
 .sd-card h2 { font-family: var(--serif); font-size: 16.5px; margin: 0 0 12px; }
+.sd-cat-row { display: flex; flex-wrap: wrap; gap: 7px; align-items: flex-start; }
+.sd-cat-block { display: contents; }
 .sd-cat-header {
-  display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
   background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
-  padding: 10px 14px; margin-top: 8px; font-family: var(--sans); font-size: 13px; color: var(--text-dim);
+  padding: 8px 14px; font-family: var(--sans); font-size: 14.5px; font-weight: 600; color: var(--text-dim);
 }
-.sd-cat-header:first-child { margin-top: 0; }
 .sd-cat-header:hover { border-color: var(--gold); }
-.sd-cat-header .count { font-family: var(--mono); color: var(--text-faint); font-size: 10.5px; margin-left: 6px; }
-.sd-cat-header .chevron { color: var(--text-faint); transition: transform .15s; font-size: 11px; }
-.sd-cat-header.open .chevron { transform: rotate(90deg); }
-.sd-chips { display: none; flex-wrap: wrap; gap: 8px; padding: 10px 2px 4px; }
-.sd-chips.open { display: flex; }
+.sd-cat-header.open { border-color: var(--gold); color: var(--gold); background: rgba(227,177,88,0.08); }
+.sd-cat-header .count { font-family: var(--mono); color: var(--text-faint); font-size: 11px; }
+.sd-chips {
+  display: none; flex-wrap: wrap; gap: 5px; margin: 6px 0 8px 6px; padding: 10px 10px 10px 12px;
+  border-left: 2px solid var(--gold); background: rgba(227,177,88,0.05); border-radius: 0 8px 8px 0;
+}
+.sd-chips.open { display: flex; flex: 1 0 100%; }
 .sd-chip {
-  font-size: 13px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim);
-  border-radius: 8px; padding: 7px 12px; cursor: pointer;
+  font-size: 11.5px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim);
+  border-radius: 6px; padding: 4px 9px; cursor: pointer;
 }
 .sd-chip:hover { border-color: var(--gold); color: var(--text); }
 
-.sd-sentence-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-.sd-sentence-row .sd-input { margin-bottom: 0; flex: 1; }
-.sd-listen-btn {
-  width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--border);
-  background: var(--surface-2); color: var(--gold); font-size: 16px; cursor: pointer; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.sd-listen-btn:hover { border-color: var(--gold); }
-.sd-listen-btn:disabled { opacity: .4; cursor: not-allowed; }
-
 .sd-input {
-  width: 100%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
-  border-radius: 8px; padding: 10px 12px; font-size: 15px; font-family: var(--sans); margin-bottom: 10px;
+  width: 100%; background: transparent; border: none; color: var(--text);
+  padding: 10px 0 0; font-size: 18px; font-family: var(--serif); cursor: default;
 }
-.sd-input:focus { outline: none; border-color: var(--gold); }
+.sd-input:focus { outline: none; }
+
+.sd-listen-btn-wide {
+  width: 100%; margin-top: 4px; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--gold); font-size: 14.5px; font-weight: 600; cursor: pointer; font-family: var(--sans);
+}
+.sd-listen-btn-wide:hover:not(:disabled) { border-color: var(--gold); }
+.sd-listen-btn-wide:disabled { opacity: .35; cursor: not-allowed; color: var(--text-faint); }
+
+.sd-empty-hint { color: var(--text-faint); font-size: 14px; font-family: var(--sans); }
 
 .sd-target-preview { font-family: var(--serif); font-size: 19px; margin: 10px 0 4px; }
 .sd-target-preview .orig { color: var(--text-faint); font-size: 14px; }
-.sd-target-preview .hl { color: var(--blue); border-bottom: 2px solid var(--blue); }
+.sd-target-preview .hl { border-bottom: 2px solid var(--blue); color: var(--blue); padding-bottom: 1px; }
+.sd-target-preview .hl[data-rule="경음화"] { border-bottom-color: var(--gold); color: var(--gold); }
+.sd-target-preview .hl[data-rule="비음화"] { border-bottom-color: var(--blue); color: var(--blue); }
+.sd-target-preview .hl[data-rule="연음"], .sd-target-preview .hl[data-rule="연음(겹받침)"] { border-bottom-color: var(--teal); color: var(--teal); }
+.sd-target-preview .hl[data-rule="격음화"] { border-bottom-color: var(--purple); color: var(--purple); }
+.sd-target-preview .hl[data-rule="유음화"] { border-bottom-color: var(--rose); color: var(--rose); }
+.sd-target-preview .hl[data-rule="ㅎ탈락"] { border-bottom-color: var(--gray); color: var(--gray); }
 .sd-rule-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .sd-rule-tag { font-family: var(--mono); font-size: 11px; border-radius: 999px; padding: 3px 9px; border: 1px solid; }
 .sd-rule-tag[data-rule="경음화"]  { color: var(--gold);  border-color: var(--gold); }
@@ -247,16 +255,18 @@ body { margin: 0; background: #171b24; }
     <div class="sd-card">
       <h2 data-i18n="card1Title"></h2>
       <div id="exampleChips"></div>
-      <div class="sd-sentence-row">
-        <input class="sd-input" id="sentenceInput" value="저는 학교에 가요.">
-        <button class="sd-listen-btn" id="listenBtn">🔊</button>
-      </div>
-      <div class="sd-target-preview" id="targetPreview"></div>
-      <div class="sd-rule-tags" id="ruleTags"></div>
+      <input class="sd-input" id="sentenceInput" value="" readonly>
     </div>
 
     <div class="sd-card">
-      <h2 data-i18n="card2Title"></h2>
+      <h2 data-i18n="card2TitleListen"></h2>
+      <div class="sd-target-preview" id="targetPreview"></div>
+      <div class="sd-rule-tags" id="ruleTags"></div>
+      <button class="sd-listen-btn-wide" id="listenBtn" disabled data-i18n="listenBtnWide"></button>
+    </div>
+
+    <div class="sd-card">
+      <h2 data-i18n="card3Title"></h2>
       <div class="sd-record-row">
         <button class="sd-mic-btn" id="micBtn">●</button>
         <div class="sd-record-meta">
@@ -347,7 +357,10 @@ body { margin: 0; background: #171b24; }
     modeConversation: { ko: '💬 회화 연습', ja: '💬 会話練習' },
 
     card1Title: { ko: '① 문장 고르기', ja: '① 文を選ぶ' },
-    card2Title: { ko: '② 녹음하기', ja: '② 録音する' },
+    card2TitleListen: { ko: '② 발음 듣기', ja: '② 発音を聞く' },
+    card3Title: { ko: '③ 녹음하기', ja: '③ 録音する' },
+    pickSentenceHint: { ko: '위에서 문장을 먼저 골라주세요.', ja: '上で文を選んでください。' },
+    listenBtnWide: { ko: '🔊 발음 듣기', ja: '🔊 発音を聞く' },
     recordIdle: { ko: '마이크 버튼을 눌러 녹음을 시작하세요', ja: 'マイクのボタンを押して録音を始めてください' },
     recordDenied: { ko: '마이크 권한이 거부됐어요. 브라우저 주소창 옆 마이크 아이콘에서 허용해주세요.', ja: 'マイクの使用が許可されていません。ブラウザのアドレスバー横のマイクのアイコンから許可してください。' },
     recordingNow: { ko: '녹음 중... 다시 누르면 정지', ja: '録音中... もう一度押すと停止します' },
@@ -409,7 +422,10 @@ body { margin: 0; background: #171b24; }
   function ruleLabel(name){ return (RULE_LABELS[name] && RULE_LABELS[name][lang]) || name; }
   function categoryLabel(name){ return (CATEGORY_LABELS[name] && CATEGORY_LABELS[name][lang]) || name; }
   function applyStaticI18n(){
-    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const val = t(el.dataset.i18n);
+      if (el.tagName === 'INPUT') el.placeholder = val; else el.textContent = val;
+    });
   }
 
   // ================= TTS (양쪽 뷰 공유) =================
@@ -475,32 +491,60 @@ body { margin: 0; background: #171b24; }
   const categoryOpenState = {}; // 기본: 전부 접힘
   function renderChips(){
     chipWrap.innerHTML = '';
+    const catRow = document.createElement('div');
+    catRow.className = 'sd-cat-row';
+
     Object.entries(CURRICULUM).forEach(([category, sentences]) => {
       const isOpen = !!categoryOpenState[category];
+      const block = document.createElement('div');
+      block.className = 'sd-cat-block';
+
       const header = document.createElement('div');
       header.className = 'sd-cat-header' + (isOpen ? ' open' : '');
-      header.innerHTML = `<span>${categoryLabel(category)}<span class="count">(${sentences.length})</span></span><span class="chevron">▸</span>`;
+      header.innerHTML = `${categoryLabel(category)}<span class="count">(${sentences.length})</span>`;
       header.addEventListener('click', () => { categoryOpenState[category] = !isOpen; renderChips(); });
-      chipWrap.appendChild(header);
+      block.appendChild(header);
 
-      const row = document.createElement('div');
-      row.className = 'sd-chips' + (isOpen ? ' open' : '');
-      sentences.forEach(ex => {
-        const c = document.createElement('span'); c.className = 'sd-chip'; c.textContent = ex;
-        c.addEventListener('click', () => { document.getElementById('sentenceInput').value = ex; updateTarget(); playTTS(ex, c); });
-        row.appendChild(c);
-      });
-      chipWrap.appendChild(row);
+      if (isOpen) {
+        const row = document.createElement('div');
+        row.className = 'sd-chips open';
+        sentences.forEach(ex => {
+          const c = document.createElement('span'); c.className = 'sd-chip'; c.textContent = ex;
+          c.addEventListener('click', () => { document.getElementById('sentenceInput').value = ex; updateTarget(); playTTS(ex, c); });
+          row.appendChild(c);
+        });
+        block.appendChild(row);
+      }
+
+      catRow.appendChild(block);
     });
+
+    chipWrap.appendChild(catRow);
   }
 
   function updateTarget(){
     const sentence = document.getElementById('sentenceInput').value.trim();
     const preview = document.getElementById('targetPreview');
     const tagWrap = document.getElementById('ruleTags');
-    if (!sentence){ preview.innerHTML = ''; tagWrap.innerHTML = ''; return; }
+    const listenBtn = document.getElementById('listenBtn');
+    if (!sentence){
+      preview.innerHTML = `<span class="sd-empty-hint">${t('pickSentenceHint')}</span>`;
+      tagWrap.innerHTML = '';
+      listenBtn.disabled = true;
+      return;
+    }
+    listenBtn.disabled = false;
     const { result, notes } = applyRules(sentence);
-    const spans = [...result].map((ch, i) => ch !== sentence[i] ? `<span class="hl">${ch}</span>` : ch).join('');
+    const ruleByIndex = new Map();
+    notes.forEach(n => {
+      if (!ruleByIndex.has(n.pos)) ruleByIndex.set(n.pos, n.rule);
+      if (!ruleByIndex.has(n.pos + 1)) ruleByIndex.set(n.pos + 1, n.rule);
+    });
+    const spans = [...result].map((ch, i) => {
+      if (ch === sentence[i]) return ch;
+      const rule = ruleByIndex.get(i) || '';
+      return `<span class="hl" data-rule="${rule}">${ch}</span>`;
+    }).join('');
     preview.innerHTML = `<span class="orig">${sentence}</span><br>${spans}`;
     tagWrap.innerHTML = '';
     notes.forEach(n => { const tag = document.createElement('span'); tag.className = 'sd-rule-tag'; tag.dataset.rule = n.rule; tag.textContent = ruleLabel(n.rule); tagWrap.appendChild(tag); });
