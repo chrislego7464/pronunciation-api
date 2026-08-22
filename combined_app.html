@@ -185,6 +185,11 @@ body { margin: 0; background: #171b24; }
 .sd-custom-row { display: flex; gap: 8px; }
 .sd-char-count { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); text-align: right; margin-top: 4px; }
 .sd-char-count.limit { color: var(--coral); }
+.ja-translate-box { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.ja-translate-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 14.5px; align-items: baseline; }
+.ja-translate-label { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); width: 90px; flex-shrink: 0; }
+.ja-translate-value { font-family: var(--serif); color: var(--text); }
+.ja-translate-value.faint { color: var(--text-dim); font-family: var(--sans); font-size: 13px; }
 .sd-input-editable {
   flex: 1; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
   border-radius: 8px; padding: 10px 12px; font-size: 15px; font-family: var(--sans);
@@ -367,6 +372,20 @@ body { margin: 0; background: #171b24; }
   <!-- ===== 커스텀 문장 ===== -->
   <div id="customView" style="display:none">
     <div class="sd-card">
+      <h2 data-i18n="jaInputTitle"></h2>
+      <p class="sd-custom-hint" data-i18n="jaInputHint"></p>
+      <div class="sd-custom-row">
+        <input class="sd-input-editable" id="jaInput" data-i18n="jaInputPlaceholder" maxlength="80">
+        <button class="sd-btn" id="jaTranslateBtn" data-i18n="translateBtn"></button>
+      </div>
+      <div id="jaTranslateResult" class="ja-translate-box" style="display:none">
+        <div class="ja-translate-row"><span class="ja-translate-label" data-i18n="translatedLabel"></span><span id="jaTranslatedKo" class="ja-translate-value"></span></div>
+        <div class="ja-translate-row"><span class="ja-translate-label" data-i18n="backTranslateLabel"></span><span id="jaBackTranslated" class="ja-translate-value faint"></span></div>
+        <button class="sd-btn secondary" id="useTranslationBtn" data-i18n="useTranslationBtn"></button>
+      </div>
+    </div>
+
+    <div class="sd-card">
       <h2 data-i18n="customTitle"></h2>
       <p class="sd-custom-hint" data-i18n="customHint"></p>
       <div class="sd-custom-row">
@@ -526,6 +545,17 @@ body { margin: 0; background: #171b24; }
     },
     customPlaceholder: { ko: '한국어 문장을 입력하세요', ja: '韓国語の文を入力してください' },
     customApplyBtn: { ko: '적용', ja: '適用' },
+    jaInputTitle: { ko: '🇯🇵 일본어로 입력해서 번역하기', ja: '🇯🇵 日本語で入力して翻訳する' },
+    jaInputHint: {
+      ko: '한국어 타이핑이 어려우면, 일본어로 문장을 쓰고 번역해서 연습할 수 있어요. 기계번역이라 완벽하지 않을 수 있어서, 번역 결과를 다시 일본어로 되짚어 보여드려요 — 원래 뜻과 비슷한지 확인해보세요.',
+      ja: '韓国語のタイピングが難しければ、日本語で文を書いて翻訳して練習できます。機械翻訳なので完璧ではないことがあり、訳した結果をもう一度日本語に訳し戻してお見せします — 元の意味と近いか確認してください。',
+    },
+    jaInputPlaceholder: { ko: '일본어 문장을 입력하세요', ja: '日本語の文を入力してください' },
+    translateBtn: { ko: '번역하기', ja: '翻訳する' },
+    translatedLabel: { ko: '번역(한국어)', ja: '翻訳(韓国語)' },
+    backTranslateLabel: { ko: '역번역 확인', ja: '訳し戻し確認' },
+    useTranslationBtn: { ko: '이 문장으로 연습하기', ja: 'この文で練習する' },
+    translateFailed: { ko: '번역 실패', ja: '翻訳失敗' },
     totalPractice: { ko: '총 연습 횟수', ja: '総練習回数' },
     avgScore: { ko: '평균 점수', ja: '平均点' },
     resetHistory: { ko: '기록 초기화', ja: '記録をリセット' },
@@ -803,6 +833,50 @@ body { margin: 0; background: #171b24; }
       listenBtn: document.getElementById('customListenBtn'),
     });
   }
+  // ---- 일본어 입력 → 한국어 번역 (+ 역번역으로 대략 검증) ----
+  let lastTranslatedKo = null;
+  document.getElementById('jaTranslateBtn').addEventListener('click', async () => {
+    const jaText = document.getElementById('jaInput').value.trim();
+    if (!jaText) return;
+    const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+    const btn = document.getElementById('jaTranslateBtn');
+    btn.disabled = true;
+    try {
+      const res1 = await fetch(`${backendUrl}/api/translate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: jaText, from: 'ja', to: 'ko' }),
+      });
+      if (!res1.ok) throw new Error(`(${res1.status})`);
+      const data1 = await res1.json();
+      const koText = data1.translated || '';
+
+      const res2 = await fetch(`${backendUrl}/api/translate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: koText, from: 'ko', to: 'ja' }),
+      });
+      const data2 = res2.ok ? await res2.json() : { translated: '' };
+
+      lastTranslatedKo = koText;
+      document.getElementById('jaTranslatedKo').textContent = koText;
+      document.getElementById('jaBackTranslated').textContent = data2.translated || '';
+      document.getElementById('jaTranslateResult').style.display = 'block';
+    } catch (err) {
+      console.error(err);
+      alert(t('translateFailed') + '\n\n' + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  document.getElementById('jaInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('jaTranslateBtn').click();
+  });
+  document.getElementById('useTranslationBtn').addEventListener('click', () => {
+    if (!lastTranslatedKo) return;
+    document.getElementById('customInput').value = lastTranslatedKo;
+    document.getElementById('customCharCount').textContent = `${lastTranslatedKo.length}/80`;
+    updateCustomTarget();
+  });
+
   document.getElementById('customApplyBtn').addEventListener('click', () => { updateCustomTarget(); });
   document.getElementById('customInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('customApplyBtn').click();

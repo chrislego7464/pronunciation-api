@@ -7,6 +7,7 @@ const multer = require('multer');
 const { assessPronunciationFromFile, annotateWithPhonology } = require('./azurePronunciationAssessment');
 const { assessPronunciationETRI } = require('./etriPronunciationAssessment');
 const { synthesizeSpeech } = require('./azureTextToSpeech');
+const { translateText } = require('./azureTranslate');
 const { applyRules } = require('./koreanPhonology');
 
 const app = express();
@@ -56,6 +57,25 @@ app.post('/api/pronunciation/tts', async (req, res) => {
     const audioBuffer = await synthesizeSpeech(sentence);
     res.set('Content-Type', 'audio/wav');
     res.send(audioBuffer);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: String((err && err.message) || err) });
+  }
+});
+
+/**
+ * POST /api/translate
+ * body: { text: "...", from: "ja", to: "ko" }
+ * -> Azure Translator로 번역한 텍스트를 반환한다. 일본어 입력을 한국어로
+ *    바꿔서 발음 쉐도잉 파이프라인에 넣기 위한 용도. from/to를 바꿔서
+ *    역번역(검증용)에도 그대로 재사용한다.
+ */
+app.post('/api/translate', async (req, res) => {
+  const { text, from, to } = req.body || {};
+  if (!text) return res.status(400).json({ error: 'text가 필요합니다.' });
+  try {
+    const translated = await translateText(text, from || 'ja', to || 'ko');
+    res.json({ translated });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: String((err && err.message) || err) });
