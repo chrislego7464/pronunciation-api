@@ -305,6 +305,49 @@ body { margin: 0; background: #171b24; }
 .an-rule-score { font-family: var(--mono); font-size: 12px; color: var(--text-faint); width: 36px; text-align: right; flex-shrink: 0; }
 .an-empty { text-align: center; padding: 30px 10px; color: var(--text-faint); font-size: 14px; }
 
+.an-section-title { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--text); margin: 22px 0 10px; }
+.an-section-title:first-of-type { margin-top: 4px; }
+
+.an-period-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.an-period-tab {
+  flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px; font-size: 12.5px; font-weight: 600; color: var(--text-dim); cursor: pointer; font-family: var(--sans);
+}
+.an-period-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(227,177,88,0.08); }
+
+.an-trend-bars { display: flex; gap: 6px; align-items: flex-end; height: 110px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 8px; }
+.an-trend-col { display: flex; flex-direction: column; align-items: center; min-width: 34px; flex-shrink: 0; }
+.an-trend-bar-track { width: 18px; height: 70px; display: flex; align-items: flex-end; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.an-trend-bar { width: 100%; background: var(--gold); border-radius: 4px 4px 0 0; min-height: 2px; }
+.an-trend-val { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+.an-trend-label { font-family: var(--mono); font-size: 9px; color: var(--text-faint); margin-top: 1px; white-space: nowrap; }
+
+.an-cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.an-cal-nav { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; width: 28px; height: 28px; color: var(--text-dim); cursor: pointer; font-size: 14px; }
+.an-cal-nav:hover { border-color: var(--gold); color: var(--gold); }
+.an-cal-title { font-family: var(--mono); font-size: 12.5px; color: var(--text); }
+.an-cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 4px; }
+.an-cal-weekdays span { font-family: var(--mono); font-size: 10px; color: var(--text-faint); }
+.an-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.an-cal-cell { position: relative; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; }
+.an-cal-cell.has-data { cursor: pointer; background: var(--surface-2); }
+.an-cal-cell.has-data:hover { background: rgba(227,177,88,0.12); }
+.an-cal-daynum { font-family: var(--sans); font-size: 11px; color: var(--text-dim); }
+.an-cal-cell.has-data .an-cal-daynum { color: var(--text); }
+.an-cal-cell.today .an-cal-daynum { color: var(--gold); font-weight: 700; }
+.an-cal-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); margin-top: 1px; }
+.an-cal-cell.selected { background: var(--gold); }
+.an-cal-cell.selected .an-cal-daynum { color: #201705; font-weight: 700; }
+.an-cal-cell.selected .an-cal-dot { background: #201705; }
+
+.an-day-hint { text-align: center; padding: 14px 8px; color: var(--text-faint); font-size: 12.5px; }
+.an-day-header { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin: 10px 0 8px; }
+.an-day-list { display: flex; flex-direction: column; gap: 6px; }
+.an-day-row { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; }
+.an-day-time { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); flex-shrink: 0; }
+.an-day-sentence { flex: 1; font-family: var(--serif); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.an-day-score { font-family: var(--mono); font-size: 11px; color: var(--gold); flex-shrink: 0; }
+
 /* ===== 회화 연습 (cv-*) ===== */
 .cv-scenario-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
 .cv-scenario-chip {
@@ -711,6 +754,14 @@ body { margin: 0; background: #171b24; }
     noHistoryYetGuest: { ko: '게스트 모드예요 — 로그인하면 학습 기록이 쌓이기 시작해요.', ja: 'ゲストモードです — ログインすると学習記録が溜まり始めます。' },
     loadingHistory: { ko: '기록을 불러오는 중...', ja: '記録を読み込み中...' },
     historyLoadFailed: { ko: '기록을 불러오지 못했어요. 백엔드/Supabase 설정을 확인해주세요.', ja: '記録を読み込めませんでした。バックエンド/Supabaseの設定を確認してください。' },
+    trendTitle: { ko: '점수 추이', ja: 'スコアの推移' },
+    periodDay: { ko: '일별', ja: '日別' },
+    periodWeek: { ko: '주별', ja: '週別' },
+    periodMonth: { ko: '월별', ja: '月別' },
+    calendarTitle: { ko: '달력으로 보기', ja: 'カレンダーで見る' },
+    ruleBreakdownTitle: { ko: '음운 규칙별 점수', ja: '音韻ルール別スコア' },
+    selectDayHint: { ko: '점이 찍힌 날짜를 눌러 그날의 기록을 확인하세요.', ja: '点が付いた日付を押すと、その日の記録を確認できます。' },
+    dayCount: { ko: (n) => `${n}회 진단`, ja: (n) => `${n}回診断` },
     totalPractice: { ko: '총 연습 횟수', ja: '総練習回数' },
     avgScore: { ko: '평균 점수', ja: '平均点' },
     resetHistory: { ko: '기록 초기화', ja: '記録をリセット' },
@@ -958,6 +1009,16 @@ body { margin: 0; background: #171b24; }
       .catch(err => console.error('중앙 기록 업로드 실패(로컬 기록은 정상 저장됨):', err));
   }
 
+  let currentHistData = [];
+  let calendarYear, calendarMonth; // calendarMonth: 0-indexed
+  let selectedDate = null; // 'YYYY-MM-DD'
+  let trendPeriod = 'day'; // 'day' | 'week' | 'month'
+
+  function dateKeyOf(ts){
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
   async function renderAnalytics(){
     const wrap = document.getElementById('analyticsWrap');
     if (!isLoggedIn()) {
@@ -965,13 +1026,11 @@ body { margin: 0; background: #171b24; }
       return;
     }
     wrap.innerHTML = `<div class="an-empty">${t('loadingHistory')}</div>`;
-    const backendUrl = BACKEND_URL;
-    let hist = [];
     try {
-      const res = await fetch(`${backendUrl}/api/history?userId=${encodeURIComponent(currentUserId())}`);
+      const res = await fetch(`${BACKEND_URL}/api/history?userId=${encodeURIComponent(currentUserId())}`);
       if (!res.ok) throw new Error('load failed: ' + res.status);
       const data = await res.json();
-      hist = (data.records || []).map(r => ({
+      currentHistData = (data.records || []).map(r => ({
         ts: new Date(r.created_at).getTime(), mode: r.mode, sentence: r.sentence, category: r.category,
         overall: r.overall || {}, ruleHits: r.rule_hits || [],
       }));
@@ -980,10 +1039,20 @@ body { margin: 0; background: #171b24; }
       wrap.innerHTML = `<div class="an-empty">${t('historyLoadFailed')}</div>`;
       return;
     }
-    if (hist.length === 0){
+    if (currentHistData.length === 0){
       wrap.innerHTML = `<div class="an-empty">${t('noHistoryYet')}</div>`;
       return;
     }
+    if (calendarYear === undefined) {
+      const now = new Date();
+      calendarYear = now.getFullYear(); calendarMonth = now.getMonth();
+    }
+    renderAnalyticsUI();
+  }
+
+  function renderAnalyticsUI(){
+    const wrap = document.getElementById('analyticsWrap');
+    const hist = currentHistData;
     const totalCount = hist.length;
     const avgOverall = Math.round((hist.reduce((s, h) => s + (h.overall.PronScore || 0), 0) / totalCount) * 10) / 10;
 
@@ -1016,12 +1085,139 @@ body { margin: 0; background: #171b24; }
         <div class="an-stat"><div class="num">${avgOverall}</div><div class="label">${t('avgScore')}</div></div>
       </div>
       ${summaryHtml}
+
+      <div class="an-section-title">${t('trendTitle')}</div>
+      <div class="an-period-tabs">
+        <button class="an-period-tab${trendPeriod === 'day' ? ' active' : ''}" data-period="day">${t('periodDay')}</button>
+        <button class="an-period-tab${trendPeriod === 'week' ? ' active' : ''}" data-period="week">${t('periodWeek')}</button>
+        <button class="an-period-tab${trendPeriod === 'month' ? ' active' : ''}" data-period="month">${t('periodMonth')}</button>
+      </div>
+      <div id="anTrendChart"></div>
+
+      <div class="an-section-title">${t('calendarTitle')}</div>
+      <div id="anCalendar"></div>
+      <div id="anSelectedDayDetail"></div>
+
+      <div class="an-section-title">${t('ruleBreakdownTitle')}</div>
       <div class="an-rule-list">
         ${ruleRows.map(r => `
           <div class="an-rule-row">
             <span class="an-rule-name">${ruleLabel(r.rule)}</span>
             <div class="an-bar-track"><div class="an-bar-fill" data-rule="${r.rule}" style="width:${r.avg ?? 0}%"></div></div>
             <span class="an-rule-score">${r.avg ?? '–'}${t('scoreUnit')}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    wrap.querySelectorAll('.an-period-tab').forEach(btn => {
+      btn.addEventListener('click', () => { trendPeriod = btn.dataset.period; renderAnalyticsUI(); });
+    });
+
+    renderTrendChart();
+    renderCalendar();
+    renderSelectedDayDetail();
+  }
+
+  function renderTrendChart(){
+    const container = document.getElementById('anTrendChart');
+    const groups = new Map(); // key -> { sum, count }
+    currentHistData.forEach(h => {
+      const d = new Date(h.ts);
+      let key;
+      if (trendPeriod === 'day') key = dateKeyOf(h.ts);
+      else if (trendPeriod === 'month') key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      else { const sun = new Date(d); sun.setDate(d.getDate() - d.getDay()); key = dateKeyOf(sun.getTime()); }
+      if (!groups.has(key)) groups.set(key, { sum: 0, count: 0 });
+      const g = groups.get(key);
+      g.sum += (h.overall.PronScore || 0); g.count++;
+    });
+    const keys = [...groups.keys()].sort().slice(-14);
+    if (keys.length === 0) { container.innerHTML = ''; return; }
+    container.innerHTML = `<div class="an-trend-bars">${keys.map(k => {
+      const g = groups.get(k);
+      const avg = Math.round(g.sum / g.count);
+      const label = trendPeriod === 'week' ? k.slice(5) : k.slice(5);
+      return `<div class="an-trend-col" title="${k}">
+        <div class="an-trend-bar-track"><div class="an-trend-bar" style="height:${avg}%"></div></div>
+        <div class="an-trend-val">${avg}</div>
+        <div class="an-trend-label">${label}</div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  function renderCalendar(){
+    const container = document.getElementById('anCalendar');
+    const byDate = new Map();
+    currentHistData.forEach(h => {
+      const k = dateKeyOf(h.ts);
+      if (!byDate.has(k)) byDate.set(k, []);
+      byDate.get(k).push(h);
+    });
+
+    const firstDay = new Date(calendarYear, calendarMonth, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const todayKey = dateKeyOf(Date.now());
+    const weekdayLabels = lang === 'ko' ? ['일', '월', '화', '수', '목', '금', '토'] : ['日', '月', '火', '水', '木', '金', '土'];
+
+    let cells = '';
+    for (let i = 0; i < startWeekday; i++) cells += `<div class="an-cal-cell empty"></div>`;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const k = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const hasData = byDate.has(k);
+      const cls = ['an-cal-cell'];
+      if (hasData) cls.push('has-data');
+      if (k === selectedDate) cls.push('selected');
+      if (k === todayKey) cls.push('today');
+      cells += `<div class="${cls.join(' ')}" data-date="${hasData ? k : ''}">
+        <span class="an-cal-daynum">${day}</span>
+        ${hasData ? '<span class="an-cal-dot"></span>' : ''}
+      </div>`;
+    }
+
+    container.innerHTML = `
+      <div class="an-cal-header">
+        <button class="an-cal-nav" id="anCalPrev">‹</button>
+        <span class="an-cal-title">${calendarYear}.${String(calendarMonth + 1).padStart(2, '0')}</span>
+        <button class="an-cal-nav" id="anCalNext">›</button>
+      </div>
+      <div class="an-cal-weekdays">${weekdayLabels.map(d => `<span>${d}</span>`).join('')}</div>
+      <div class="an-cal-grid">${cells}</div>
+    `;
+
+    document.getElementById('anCalPrev').addEventListener('click', () => {
+      calendarMonth--; if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+      renderCalendar();
+    });
+    document.getElementById('anCalNext').addEventListener('click', () => {
+      calendarMonth++; if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+      renderCalendar();
+    });
+    container.querySelectorAll('.an-cal-cell.has-data').forEach(cell => {
+      cell.addEventListener('click', () => {
+        selectedDate = cell.dataset.date;
+        renderCalendar();
+        renderSelectedDayDetail();
+      });
+    });
+  }
+
+  function renderSelectedDayDetail(){
+    const container = document.getElementById('anSelectedDayDetail');
+    if (!selectedDate) { container.innerHTML = `<div class="an-day-hint">${t('selectDayHint')}</div>`; return; }
+    const dayHist = currentHistData.filter(h => dateKeyOf(h.ts) === selectedDate);
+    if (dayHist.length === 0) { container.innerHTML = `<div class="an-day-hint">${t('selectDayHint')}</div>`; return; }
+    const dayAvg = Math.round(dayHist.reduce((s, h) => s + (h.overall.PronScore || 0), 0) / dayHist.length);
+    const locale = lang === 'ko' ? 'ko-KR' : 'ja-JP';
+    container.innerHTML = `
+      <div class="an-day-header">${selectedDate} · ${t('dayCount', dayHist.length)} · ${t('avgScore')} ${dayAvg}${t('scoreUnit')}</div>
+      <div class="an-day-list">
+        ${dayHist.map(h => `
+          <div class="an-day-row">
+            <span class="an-day-time">${new Date(h.ts).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</span>
+            <span class="an-day-sentence">${h.sentence}</span>
+            <span class="an-day-score">${h.overall.PronScore ?? '–'}${t('scoreUnit')}</span>
           </div>
         `).join('')}
       </div>
@@ -1726,6 +1922,9 @@ body { margin: 0; background: #171b24; }
     // 회화 연습 뷰 갱신 (진행 중이던 대화는 언어가 섞이지 않도록 초기화)
     renderScenarios();
     if (currentScenarioKey) { cvThread.innerHTML = ''; lineIndex = 0; showNextLine(); }
+
+    // 학습 기록 뷰 갱신 (이미 불러온 데이터가 있으면 재조회 없이 다시 그리기만)
+    if (currentHistData.length > 0) renderAnalyticsUI();
   }
 
   // ================= 초기화 =================
