@@ -4,12 +4,13 @@ require('dotenv').config();
 const fs = require('fs');
 const express = require('express');
 const multer = require('multer');
-const { assessPronunciationFromFile, annotateWithPhonology } = require('./azurePronunciationAssessment');
+const { assessPronunciationFromFile, assessPronunciationUnscripted, annotateWithPhonology } = require('./azurePronunciationAssessment');
 const { assessPronunciationETRI } = require('./etriPronunciationAssessment');
 const { synthesizeSpeech } = require('./azureTextToSpeech');
 const { translateText } = require('./azureTranslate');
 const { saveHistoryRecord, fetchHistoryForUser } = require('./historyStore');
 const { applyRules } = require('./koreanPhonology');
+const { checkAnswerValidity } = require('./geminiValidity');
 
 const app = express();
 app.use(express.json());
@@ -92,7 +93,7 @@ app.post('/api/translate', async (req, res) => {
  *    동의 게이트를 넣어뒀다.)
  */
 app.post('/api/history', upload.single('audio'), async (req, res) => {
-  const { userId, mode, sentence, category, lang, overall, ruleHits } = req.body || {};
+  const { userId, mode, sentence, category, lang, overall, ruleHits, responseLatencyMs } = req.body || {};
   if (!userId || !mode || !sentence) {
     return res.status(400).json({ error: 'userId, mode, sentence가 필요합니다.' });
   }
@@ -107,6 +108,7 @@ app.post('/api/history', upload.single('audio'), async (req, res) => {
       overall: overall ? JSON.parse(overall) : {},
       ruleHits: ruleHits ? JSON.parse(ruleHits) : [],
       audioBuffer,
+      responseLatencyMs: responseLatencyMs ? parseInt(responseLatencyMs, 10) : null,
     });
     res.json({ ok: true, audioPath: result.audioPath });
   } catch (err) {
@@ -152,6 +154,45 @@ app.post('/api/pronunciation/assess', upload.single('audio'), async (req, res) =
     });
     const annotated = annotateWithPhonology(raw, sentence);
     res.json(annotated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: String((err && err.message) || err) });
+  } finally {
+    fs.unlink(req.file.path, () => {});
+  }
+});
+
+/**
+ * POST /api/pronunciation/assess-free  (multipart/form-data)
+ * fields: audio (파일), question (상대가 물어본 질문, 채점용 맥락), lang ('ko'|'ja')
+ * -> 목표 문장을 모르는 자유 발화를 인식(unscripted)하고, 인식된 텍스트에
+ *    우리 규칙 엔진을 적용해 발음 규칙 태그를 붙인 뒤, Gemini로 "질문에 대한
+ *    타당한 대답인가"를 판단해서 함께 반환한다.
+ */
+app.post('/api/pronunciation/assess-free', upload.single('audio'), async (req, res) => {
+  const { question, lang } = req.body || {};
+  if (!req.file || !question) {
+    return res.status(400).json({ error: 'audio 파일과 question이 모두 필요합니다.' });
+  }
+  try {
+    const raw = await assessPronunciationUnscripted({ audioFilePath: req.file.path });
+    const recognizedText = raw.DisplayText || (raw.NBest && raw.NBest[0] && raw.NBest[0].Display) || '';
+    if (!recognizedText) {
+      return res.json({
+        recognizedText: '', overall: null, words: [],
+        valid: false, feedback: lang === 'ja' ? '音声を認識できませんでした。もう一度お試しください。' : '음성을 인식하지 못했어요. 다시 시도해주세요.',
+      });
+    }
+    const annotated = annotateWithPhonology(raw, recognizedText);
+
+    let validity = { valid: null, feedback: '' };
+    try {
+      validity = await checkAnswerValidity(question, recognizedText, lang || 'ko');
+    } catch (geminiErr) {
+      console.error('Gemini 타당성 판단 실패(발음 점수는 계속 반환):', geminiErr);
+    }
+
+    res.json({ recognizedText, overall: annotated.overall, words: annotated.words, valid: validity.valid, feedback: validity.feedback });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: String((err && err.message) || err) });

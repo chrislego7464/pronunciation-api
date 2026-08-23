@@ -315,6 +315,20 @@ body { margin: 0; background: #171b24; }
 }
 .an-period-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(227,177,88,0.08); }
 
+.an-metric-tabs { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+.an-metric-tab {
+  background: none; border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 11px; font-size: 11px; font-weight: 600; color: var(--text-faint); cursor: pointer; font-family: var(--sans);
+}
+.an-metric-tab.active { border-color: var(--teal); color: var(--teal); background: rgba(92,201,167,0.08); }
+
+.an-scope-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.an-scope-tab {
+  flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px; font-size: 12.5px; font-weight: 700; color: var(--text-dim); cursor: pointer; font-family: var(--sans);
+}
+.an-scope-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(227,177,88,0.08); }
+
 .an-trend-bars { display: flex; gap: 6px; align-items: flex-end; height: 110px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 8px; }
 .an-trend-col { display: flex; flex-direction: column; align-items: center; min-width: 34px; flex-shrink: 0; }
 .an-trend-bar-track { width: 18px; height: 70px; display: flex; align-items: flex-end; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
@@ -350,6 +364,13 @@ body { margin: 0; background: #171b24; }
 
 /* ===== 회화 연습 (cv-*) ===== */
 .cv-scenario-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+.cv-option-hint { font-size: 12.5px; color: var(--text-faint); margin-bottom: 10px; }
+.cv-option-row { display: flex; flex-direction: column; gap: 8px; }
+.cv-option-chip {
+  text-align: left; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; font-family: var(--serif); font-size: 15px; color: var(--text); cursor: pointer;
+}
+.cv-option-chip:hover { border-color: var(--gold); }
 .cv-scenario-chip {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
   cursor: pointer; flex: 1; min-width: 160px; text-align: center;
@@ -375,6 +396,12 @@ body { margin: 0; background: #171b24; }
 }
 .cv-bubble .cv-score { font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 6px; }
 .cv-bubble .cv-cat { font-family: var(--mono); font-size: 10.5px; color: var(--coral); background: rgba(226,104,90,0.1); border: 1px solid rgba(226,104,90,0.35); border-radius: 999px; padding: 2px 8px; margin-top: 4px; display: inline-block; }
+.cv-recognized-label { font-family: var(--mono); font-size: 10px; color: var(--text-faint); margin-bottom: 3px; }
+.cv-recognized-none { color: var(--text-faint); font-style: italic; }
+.cv-gemini-feedback {
+  margin-top: 8px; padding: 8px 10px; background: rgba(127,166,224,0.08); border: 1px solid rgba(127,166,224,0.3);
+  border-radius: 8px; font-family: var(--sans); font-size: 12.5px; color: var(--text); line-height: 1.5;
+}
 .cv-bubble .cv-ok { font-family: var(--mono); font-size: 10.5px; color: var(--teal); margin-top: 4px; display: inline-block; }
 
 .cv-action { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-top: 6px; }
@@ -487,8 +514,12 @@ body { margin: 0; background: #171b24; }
         <div class="home-icon">✏️</div>
         <div class="home-label" data-i18n="modeCustom"></div>
       </div>
+      <div class="home-card" id="homeChoiceBtn">
+        <div class="home-icon">🔀</div>
+        <div class="home-label" data-i18n="modeChoice"></div>
+      </div>
       <div class="home-card" id="homeConversationBtn">
-        <div class="home-icon">💬</div>
+        <div class="home-icon">🗨️</div>
         <div class="home-label" data-i18n="modeConversation"></div>
       </div>
       <div class="home-card" id="homeAnalyticsBtn">
@@ -590,11 +621,28 @@ body { margin: 0; background: #171b24; }
     <div class="sd-result" id="customResultWrap"></div>
   </div>
 
+  <!-- ===== 선택형 문장 연습 ===== -->
+  <div id="choiceView" style="display:none">
+    <div id="choicePickerScreen">
+      <div class="cv-scenario-row" id="choiceScenarioRow"></div>
+    </div>
+    <div id="choiceChatScreen" style="display:none">
+      <button class="back-btn" id="choiceBackToPickerBtn">← <span data-i18n="cvBackToPicker"></span></button>
+      <div class="cv-thread" id="choiceThread"></div>
+      <div id="choiceActionWrap"></div>
+    </div>
+  </div>
+
   <!-- ===== 회화 연습 ===== -->
   <div id="conversationView" style="display:none">
-    <div class="cv-scenario-row" id="scenarioRow"></div>
-    <div class="cv-thread" id="thread"></div>
-    <div id="actionWrap"></div>
+    <div id="scenarioPickerScreen">
+      <div class="cv-scenario-row" id="scenarioRow"></div>
+    </div>
+    <div id="conversationChatScreen" style="display:none">
+      <button class="back-btn" id="cvBackToPickerBtn">← <span data-i18n="cvBackToPicker"></span></button>
+      <div class="cv-thread" id="thread"></div>
+      <div id="actionWrap"></div>
+    </div>
   </div>
 
   <!-- ===== 학습 기록 ===== -->
@@ -705,6 +753,12 @@ body { margin: 0; background: #171b24; }
     ttsFailed: { ko: '재생/요청 실패', ja: '再生/リクエスト失敗' },
 
     yourTurn: { ko: '당신 차례예요. 위 문장을 읽고 녹음하세요.', ja: 'あなたの番です。上の文を読んで録音してください。' },
+    chooseAnswerHint: { ko: '어울리는 대답을 하나 골라보세요.', ja: '合う答えを一つ選んでください。' },
+    freeAnswerHint: { ko: '자유롭게 대답을 녹음해보세요.', ja: '自由に答えを録音してみましょう。' },
+    recognizedLabel: { ko: '인식된 내 대답', ja: '認識された自分の答え' },
+    notRecognized: { ko: '(음성을 인식하지 못했어요)', ja: '（音声を認識できませんでした）' },
+    validAnswerLabel: { ko: '✅ 타당한 대답이에요', ja: '✅ 適切な答えです' },
+    invalidAnswerLabel: { ko: '❓ 다시 생각해보세요', ja: '❓ もう一度考えてみましょう' },
     done: { ko: '대화 완료! 🎉', ja: '会話終了！🎉' },
     detailShow: { ko: '세부 점수 확인', ja: '詳細スコアを見る' },
     detailHide: { ko: '접기', ja: '閉じる' },
@@ -712,7 +766,9 @@ body { margin: 0; background: #171b24; }
 
     modeAnalytics: { ko: '학습 기록', ja: '学習記録' },
     modeCustom: { ko: '커스텀 문장', ja: 'カスタム文' },
+    modeChoice: { ko: '선택형 문장 연습', ja: '選択式文の練習' },
     backBtnLabel: { ko: '홈으로', ja: 'ホームへ' },
+    cvBackToPicker: { ko: '시나리오 선택으로', ja: 'シナリオ選択へ' },
     customTitle: { ko: '✏️ 직접 문장 입력하기', ja: '✏️ 文を直接入力する' },
     customHint: {
       ko: '커리큘럼에 없는 문장도 연습할 수 있어요. 다만 검증된 39문장과 달리, 드물게 규칙 엔진이 놓치는 예외가 있을 수 있어요.',
@@ -760,6 +816,11 @@ body { margin: 0; background: #171b24; }
     periodMonth: { ko: '월별', ja: '月別' },
     calendarTitle: { ko: '달력으로 보기', ja: 'カレンダーで見る' },
     ruleBreakdownTitle: { ko: '음운 규칙별 점수', ja: '音韻ルール別スコア' },
+    scopeAll: { ko: '전체', ja: '全体' },
+    scopeSentence: { ko: '낭독형(문장·선택형·커스텀)', ja: '朗読型(文・選択式・カスタム)' },
+    scopeConversation: { ko: '회화 연습', ja: '会話練習' },
+    secUnit: { ko: '초', ja: '秒' },
+    avgResponseLatency: { ko: '평균 응답 속도', ja: '平均応答速度' },
     selectDayHint: { ko: '점이 찍힌 날짜를 눌러 그날의 기록을 확인하세요.', ja: '点が付いた日付を押すと、その日の記録を確認できます。' },
     dayCount: { ko: (n) => `${n}회 진단`, ja: (n) => `${n}回診断` },
     totalPractice: { ko: '총 연습 횟수', ja: '総練習回数' },
@@ -1005,14 +1066,18 @@ body { margin: 0; background: #171b24; }
     form.append('lang', lang);
     form.append('overall', JSON.stringify(data.overall || {}));
     form.append('ruleHits', JSON.stringify(ruleHits));
+    if (typeof meta.responseLatencyMs === 'number') form.append('responseLatencyMs', String(meta.responseLatencyMs));
     fetch(`${backendUrl}/api/history`, { method: 'POST', body: form })
       .catch(err => console.error('중앙 기록 업로드 실패(로컬 기록은 정상 저장됨):', err));
   }
 
   let currentHistData = [];
+  let filteredHistData = [];
   let calendarYear, calendarMonth; // calendarMonth: 0-indexed
   let selectedDate = null; // 'YYYY-MM-DD'
   let trendPeriod = 'day'; // 'day' | 'week' | 'month'
+  let trendMetric = 'PronScore'; // 'PronScore' | 'AccuracyScore' | 'FluencyScore' | 'CompletenessScore'
+  let analyticsScope = 'all'; // 'all' | 'sentence' | 'conversation'  ('sentence' = 문장연습+커스텀문장 묶음)
 
   function dateKeyOf(ts){
     const d = new Date(ts);
@@ -1032,7 +1097,7 @@ body { margin: 0; background: #171b24; }
       const data = await res.json();
       currentHistData = (data.records || []).map(r => ({
         ts: new Date(r.created_at).getTime(), mode: r.mode, sentence: r.sentence, category: r.category,
-        overall: r.overall || {}, ruleHits: r.rule_hits || [],
+        overall: r.overall || {}, ruleHits: r.rule_hits || [], responseLatencyMs: r.response_latency_ms ?? null,
       }));
     } catch (err) {
       console.error('학습 기록 불러오기 실패:', err);
@@ -1052,7 +1117,26 @@ body { margin: 0; background: #171b24; }
 
   function renderAnalyticsUI(){
     const wrap = document.getElementById('analyticsWrap');
-    const hist = currentHistData;
+    const hist = currentHistData.filter(h => {
+      if (analyticsScope === 'all') return true;
+      if (analyticsScope === 'sentence') return h.mode === 'sentence' || h.mode === 'custom' || h.mode === 'choice';
+      return h.mode === 'conversation';
+    });
+    if (hist.length === 0){
+      wrap.innerHTML = `
+        <div class="an-scope-tabs">
+          <button class="an-scope-tab${analyticsScope === 'all' ? ' active' : ''}" data-scope="all">${t('scopeAll')}</button>
+          <button class="an-scope-tab${analyticsScope === 'sentence' ? ' active' : ''}" data-scope="sentence">${t('scopeSentence')}</button>
+          <button class="an-scope-tab${analyticsScope === 'conversation' ? ' active' : ''}" data-scope="conversation">${t('scopeConversation')}</button>
+        </div>
+        <div class="an-empty">${t('noHistoryYet')}</div>
+      `;
+      wrap.querySelectorAll('.an-scope-tab').forEach(btn => {
+        btn.addEventListener('click', () => { analyticsScope = btn.dataset.scope; renderAnalyticsUI(); });
+      });
+      return;
+    }
+    filteredHistData = hist;
     const totalCount = hist.length;
     const avgOverall = Math.round((hist.reduce((s, h) => s + (h.overall.PronScore || 0), 0) / totalCount) * 10) / 10;
 
@@ -1080,6 +1164,11 @@ body { margin: 0; background: #171b24; }
     }
 
     wrap.innerHTML = `
+      <div class="an-scope-tabs">
+        <button class="an-scope-tab${analyticsScope === 'all' ? ' active' : ''}" data-scope="all">${t('scopeAll')}</button>
+        <button class="an-scope-tab${analyticsScope === 'sentence' ? ' active' : ''}" data-scope="sentence">${t('scopeSentence')}</button>
+        <button class="an-scope-tab${analyticsScope === 'conversation' ? ' active' : ''}" data-scope="conversation">${t('scopeConversation')}</button>
+      </div>
       <div class="an-stat-row">
         <div class="an-stat"><div class="num">${totalCount}</div><div class="label">${t('totalPractice')}</div></div>
         <div class="an-stat"><div class="num">${avgOverall}</div><div class="label">${t('avgScore')}</div></div>
@@ -1087,6 +1176,12 @@ body { margin: 0; background: #171b24; }
       ${summaryHtml}
 
       <div class="an-section-title">${t('trendTitle')}</div>
+      <div class="an-metric-tabs">
+        <button class="an-metric-tab${trendMetric === 'PronScore' ? ' active' : ''}" data-metric="PronScore">${t('statOverall')}</button>
+        <button class="an-metric-tab${trendMetric === 'AccuracyScore' ? ' active' : ''}" data-metric="AccuracyScore">${t('statAccuracy')}</button>
+        <button class="an-metric-tab${trendMetric === 'FluencyScore' ? ' active' : ''}" data-metric="FluencyScore">${t('statFluency')}</button>
+        <button class="an-metric-tab${trendMetric === 'CompletenessScore' ? ' active' : ''}" data-metric="CompletenessScore">${t('statCompleteness')}</button>
+      </div>
       <div class="an-period-tabs">
         <button class="an-period-tab${trendPeriod === 'day' ? ' active' : ''}" data-period="day">${t('periodDay')}</button>
         <button class="an-period-tab${trendPeriod === 'week' ? ' active' : ''}" data-period="week">${t('periodWeek')}</button>
@@ -1113,6 +1208,12 @@ body { margin: 0; background: #171b24; }
     wrap.querySelectorAll('.an-period-tab').forEach(btn => {
       btn.addEventListener('click', () => { trendPeriod = btn.dataset.period; renderAnalyticsUI(); });
     });
+    wrap.querySelectorAll('.an-metric-tab').forEach(btn => {
+      btn.addEventListener('click', () => { trendMetric = btn.dataset.metric; renderAnalyticsUI(); });
+    });
+    wrap.querySelectorAll('.an-scope-tab').forEach(btn => {
+      btn.addEventListener('click', () => { analyticsScope = btn.dataset.scope; selectedDate = null; renderAnalyticsUI(); });
+    });
 
     renderTrendChart();
     renderCalendar();
@@ -1122,7 +1223,7 @@ body { margin: 0; background: #171b24; }
   function renderTrendChart(){
     const container = document.getElementById('anTrendChart');
     const groups = new Map(); // key -> { sum, count }
-    currentHistData.forEach(h => {
+    filteredHistData.forEach(h => {
       const d = new Date(h.ts);
       let key;
       if (trendPeriod === 'day') key = dateKeyOf(h.ts);
@@ -1130,7 +1231,7 @@ body { margin: 0; background: #171b24; }
       else { const sun = new Date(d); sun.setDate(d.getDate() - d.getDay()); key = dateKeyOf(sun.getTime()); }
       if (!groups.has(key)) groups.set(key, { sum: 0, count: 0 });
       const g = groups.get(key);
-      g.sum += (h.overall.PronScore || 0); g.count++;
+      g.sum += (h.overall[trendMetric] || 0); g.count++;
     });
     const keys = [...groups.keys()].sort().slice(-14);
     if (keys.length === 0) { container.innerHTML = ''; return; }
@@ -1149,7 +1250,7 @@ body { margin: 0; background: #171b24; }
   function renderCalendar(){
     const container = document.getElementById('anCalendar');
     const byDate = new Map();
-    currentHistData.forEach(h => {
+    filteredHistData.forEach(h => {
       const k = dateKeyOf(h.ts);
       if (!byDate.has(k)) byDate.set(k, []);
       byDate.get(k).push(h);
@@ -1206,7 +1307,7 @@ body { margin: 0; background: #171b24; }
   function renderSelectedDayDetail(){
     const container = document.getElementById('anSelectedDayDetail');
     if (!selectedDate) { container.innerHTML = `<div class="an-day-hint">${t('selectDayHint')}</div>`; return; }
-    const dayHist = currentHistData.filter(h => dateKeyOf(h.ts) === selectedDate);
+    const dayHist = filteredHistData.filter(h => dateKeyOf(h.ts) === selectedDate);
     if (dayHist.length === 0) { container.innerHTML = `<div class="an-day-hint">${t('selectDayHint')}</div>`; return; }
     const dayAvg = Math.round(dayHist.reduce((s, h) => s + (h.overall.PronScore || 0), 0) / dayHist.length);
     const locale = lang === 'ko' ? 'ko-KR' : 'ja-JP';
@@ -1225,9 +1326,9 @@ body { margin: 0; background: #171b24; }
   }
 
   // ================= 모드 탭 전환 =================
-  const VIEW_IDS = { home: 'homeView', sentence: 'sentenceView', custom: 'customView', conversation: 'conversationView', analytics: 'analyticsView' };
-  const MODE_ICONS = { sentence: '📝', custom: '✏️', conversation: '💬', analytics: '📊' };
-  const MODE_STRING_KEYS = { sentence: 'modeSentence', custom: 'modeCustom', conversation: 'modeConversation', analytics: 'modeAnalytics' };
+  const VIEW_IDS = { home: 'homeView', sentence: 'sentenceView', custom: 'customView', choice: 'choiceView', conversation: 'conversationView', analytics: 'analyticsView' };
+  const MODE_ICONS = { sentence: '📝', custom: '✏️', choice: '🔀', conversation: '🗨️', analytics: '📊' };
+  const MODE_STRING_KEYS = { sentence: 'modeSentence', custom: 'modeCustom', choice: 'modeChoice', conversation: 'modeConversation', analytics: 'modeAnalytics' };
   let currentMode = 'home';
 
   function updateSectionTitle(){
@@ -1243,11 +1344,14 @@ body { margin: 0; background: #171b24; }
       document.getElementById(id).style.display = (mode === m) ? '' : 'none';
     });
     document.getElementById('backBtn').style.display = (mode === 'home') ? 'none' : 'inline-flex';
+    if (mode === 'conversation') backToScenarioPicker();
+    if (mode === 'choice') backToChoicePicker();
     updateSectionTitle();
     if (mode === 'analytics') renderAnalytics();
   }
   document.getElementById('homeSentenceBtn').addEventListener('click', () => setMode('sentence'));
   document.getElementById('homeCustomBtn').addEventListener('click', () => setMode('custom'));
+  document.getElementById('homeChoiceBtn').addEventListener('click', () => setMode('choice'));
   document.getElementById('homeConversationBtn').addEventListener('click', () => setMode('conversation'));
   document.getElementById('homeAnalyticsBtn').addEventListener('click', () => setMode('analytics'));
   document.getElementById('backBtn').addEventListener('click', () => setMode('home'));
@@ -1656,32 +1760,18 @@ body { margin: 0; background: #171b24; }
   }
 
   // ================================================================
-  // ===================== ② 회화 연습 뷰 ============================
+  // ===================== ② 회화 연습 뷰 (진짜 자유 대화) ============
   // ================================================================
   const CONVERSATIONS = {
-    cafe: {
-      title: { ko: '카페에서 주문하기', ja: 'カフェで注文する' },
-      icon: '☕', color: '#e3b158',
-      lines: [
-        { speaker: 'partner', text: '어서 오세요! 뭐 드릴까요?' },
-        { speaker: 'user', text: '아메리카노 한 잔 주세요.' },
-        { speaker: 'partner', text: '여기서 드세요, 포장해 드릴까요?' },
-        { speaker: 'user', text: '포장해 주세요.' },
-        { speaker: 'partner', text: '네, 사천 원입니다.' },
-        { speaker: 'user', text: '여기 있어요.' },
-      ],
+    intro: {
+      title: { ko: '자기소개 대화', ja: '自己紹介の会話' },
+      icon: '🙋', color: '#7fa6e0',
+      questions: ['이름이 뭐예요?', '어느 나라에서 왔어요?', '취미가 뭐예요?'],
     },
-    friend: {
-      title: { ko: '친구와 인사하기', ja: '友達と挨拶する' },
-      icon: '🎓', color: '#7fa6e0',
-      lines: [
-        { speaker: 'partner', text: '안녕하세요! 이름이 뭐예요?' },
-        { speaker: 'user', text: '저는 지민이에요.' },
-        { speaker: 'partner', text: '학년이 어떻게 되세요?' },
-        { speaker: 'user', text: '저는 일학년이에요.' },
-        { speaker: 'partner', text: '어디에 가요?' },
-        { speaker: 'user', text: '저는 학교에 가요.' },
-      ],
+    daily: {
+      title: { ko: '일상 이야기', ja: '日常の話' },
+      icon: '☀️', color: '#e3b158',
+      questions: ['오늘 날씨가 어때요?', '주말에 보통 뭐 해요?', '한국 음식 중에 뭘 좋아해요?'],
     },
   };
 
@@ -1704,17 +1794,25 @@ body { margin: 0; background: #171b24; }
 
   function startScenario(key){
     currentScenarioKey = key; lineIndex = 0; cvThread.innerHTML = '';
+    document.getElementById('scenarioPickerScreen').style.display = 'none';
+    document.getElementById('conversationChatScreen').style.display = 'block';
     renderScenarios(); showNextLine();
   }
   function currentScenario(){ return CONVERSATIONS[currentScenarioKey]; }
 
+  function backToScenarioPicker(){
+    document.getElementById('conversationChatScreen').style.display = 'none';
+    document.getElementById('scenarioPickerScreen').style.display = 'block';
+    currentScenarioKey = null;
+    renderScenarios();
+  }
+  document.getElementById('cvBackToPickerBtn').addEventListener('click', backToScenarioPicker);
+
   function showNextLine(){
     const sc = currentScenario();
     if (!sc) return;
-    if (lineIndex >= sc.lines.length){ actionWrap.innerHTML = `<div class="cv-done">${t('done')}</div>`; return; }
-    const line = sc.lines[lineIndex];
-    if (line.speaker === 'partner') renderPartnerTurn(sc, line);
-    else renderUserTurn(sc, line);
+    if (lineIndex >= sc.questions.length){ actionWrap.innerHTML = `<div class="cv-done">${t('done')}</div>`; return; }
+    renderFreeQuestion(sc, sc.questions[lineIndex]);
   }
 
   function addBubble(speaker, html, sc){
@@ -1728,21 +1826,13 @@ body { margin: 0; background: #171b24; }
     return row.querySelector('.cv-bubble');
   }
 
-  function renderPartnerTurn(sc, line){
-    const bubbleEl = addBubble('partner', `${line.text}<br><span class="cv-play">${t('listenBtn')}</span>`, sc);
-    bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(line.text, e.currentTarget));
-    actionWrap.innerHTML = `<div class="cv-btn-row"><button class="cv-btn" id="convNextBtn">${t('nextBtn')}</button></div>`;
-    document.getElementById('convNextBtn').addEventListener('click', () => { lineIndex++; showNextLine(); });
-  }
-
-  function renderUserTurn(sc, line){
-    const { result: target } = applyRules(line.text);
-    const bubbleEl = addBubble('user', `${line.text}<br><span class="cv-play">${t('listenBtn')}</span>`, sc);
-    bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(line.text, e.currentTarget));
+  function renderFreeQuestion(sc, question){
+    const bubbleEl = addBubble('partner', `${question}<br><span class="cv-play">${t('listenBtn')}</span>`, sc);
+    bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(question, e.currentTarget));
 
     actionWrap.innerHTML = `
       <div class="cv-action">
-        <div class="hint">${t('yourTurn')}</div>
+        <div class="hint">${t('freeAnswerHint')}</div>
         <div class="cv-record-row">
           <button class="cv-mic-btn" id="convMicBtn">●</button>
           <div style="flex:1">
@@ -1759,10 +1849,10 @@ body { margin: 0; background: #171b24; }
         </div>
       </div>`;
 
-    setupConvRecording(line.text, target, bubbleEl);
+    setupFreeRecording(sc, question);
   }
 
-  function setupConvRecording(sentence, target, bubbleEl){
+  function setupFreeRecording(sc, question){
     let audioContext, sourceNode, processorNode, gainNode, mediaStream;
     let recordedChunks = [], recordedWavBlob = null, recordedUrl = null, recording = false;
 
@@ -1817,19 +1907,20 @@ body { margin: 0; background: #171b24; }
       diagnoseBtn.disabled = true;
       diagnoseBtn.textContent = t('diagnosing');
       try {
-        const backendUrl = BACKEND_URL;
         const form = new FormData();
         form.append('audio', recordedWavBlob, 'attempt.wav');
-        form.append('sentence', sentence);
-        const res = await fetch(`${backendUrl}/api/pronunciation/assess`, { method: 'POST', body: form });
+        form.append('question', question);
+        form.append('lang', lang);
+        const res = await fetch(`${BACKEND_URL}/api/pronunciation/assess-free`, { method: 'POST', body: form });
         if (!res.ok) {
           let detail = '';
           try { const errJson = await res.json(); detail = errJson.error || ''; } catch (e2) {}
           throw new Error(`(${res.status}) ${detail}`);
         }
         const data = await res.json();
-        renderDiagnosisBubble(bubbleEl, sentence, data, recordedUrl);
-        recordDiagnosis(data, { mode: 'conversation', sentence, category: null }, recordedWavBlob);
+        const bubbleEl = addBubble('user', '', sc);
+        renderFreeResultBubble(bubbleEl, data, recordedUrl);
+        recordDiagnosis(data, { mode: 'conversation', sentence: data.recognizedText || question, category: null }, recordedWavBlob);
         actionWrap.innerHTML = `<div class="cv-btn-row"><button class="cv-btn" id="convNextBtn">${t('nextBtn')}</button></div>`;
         document.getElementById('convNextBtn').addEventListener('click', () => { lineIndex++; showNextLine(); });
       } catch (err) {
@@ -1838,6 +1929,58 @@ body { margin: 0; background: #171b24; }
         diagnoseBtn.disabled = false;
         diagnoseBtn.textContent = t('diagnoseBtn');
       }
+    });
+  }
+
+  function renderFreeResultBubble(bubbleEl, data, recordedUrl){
+    const overall = data.overall || {};
+    const words = data.words || [];
+    const recognizedText = data.recognizedText || '';
+
+    const statHtml = [
+      [t('statAccuracy'), overall.AccuracyScore], [t('statFluency'), overall.FluencyScore],
+      [t('statCompleteness'), overall.CompletenessScore], [t('statOverall'), overall.PronScore],
+    ].map(([label, val]) => `<div class="cv-stat"><div class="num">${val ?? '–'}</div><div class="label">${label}</div></div>`).join('');
+
+    const wordsHtml = words.map(w => {
+      const relatedRules = w.relatedRules || [];
+      const ruleTags = relatedRules.map(r => `<span class="cv-rule-tag">${ruleLabel(r)}</span>`).join('');
+      const catText = w.estimatedCategory
+        ? (relatedRules.length ? t('ruleRelated', relatedRules.map(ruleLabel)) : t('genericError'))
+        : null;
+      return `<div class="cv-word-row">
+        <span class="w">${w.word}</span>
+        <span class="s">${w.accuracyScore ?? '–'}${t('scoreUnit')}</span>
+        ${ruleTags}
+        ${catText ? `<span class="cv-cat-sm">${catText}</span>` : `<span class="cv-ok-sm">${t('normalLabel')}</span>`}
+      </div>`;
+    }).join('');
+
+    const validBadge = data.valid === true ? `<span class="cv-ok">${t('validAnswerLabel')}</span>`
+      : data.valid === false ? `<span class="cv-cat">${t('invalidAnswerLabel')}</span>` : '';
+
+    bubbleEl.innerHTML = `
+      <div class="cv-recognized-label">${t('recognizedLabel')}</div>
+      ${recognizedText || `<span class="cv-recognized-none">${t('notRecognized')}</span>`}
+      <div class="cv-score">${overall.PronScore ?? '–'}${t('scoreUnit')}</div>
+      ${validBadge}
+      ${data.feedback ? `<div class="cv-gemini-feedback">💬 ${data.feedback}</div>` : ''}
+      <div style="margin-top:6px; font-family: var(--mono); font-size:10.5px; color: var(--text-faint);">${t('myRecording')}</div>
+      <audio controls src="${recordedUrl}" style="width:100%; height:30px; margin-top:2px;"></audio>
+      <div class="cv-detail-toggle">${t('detailShow')} ▾</div>
+      <div class="cv-detail-panel" style="display:none">
+        <div class="cv-stat-row">${statHtml}</div>
+        <div class="cv-word-list">${wordsHtml}</div>
+      </div>
+    `;
+
+    const toggle = bubbleEl.querySelector('.cv-detail-toggle');
+    const panel = bubbleEl.querySelector('.cv-detail-panel');
+    let open = false;
+    toggle.addEventListener('click', () => {
+      open = !open;
+      panel.style.display = open ? 'block' : 'none';
+      toggle.textContent = open ? `${t('detailHide')} ▴` : `${t('detailShow')} ▾`;
     });
   }
 
@@ -1897,6 +2040,204 @@ body { margin: 0; background: #171b24; }
     });
   }
 
+  // ================================================================
+  // ===================== ③ 선택형 문장 연습 ========================
+  // ================================================================
+  const CHOICE_SETS = {
+    intro: {
+      title: { ko: '자기소개', ja: '自己紹介' }, icon: '🙋', color: '#7fa6e0',
+      turns: [
+        { question: '이름이 뭐예요?', options: ['저는 지민이에요.', '제 이름은 유키예요.', '하나예요.'] },
+        { question: '어느 나라에서 왔어요?', options: ['일본에서 왔어요.', '저는 일본 사람이에요.'] },
+        { question: '취미가 뭐예요?', options: ['영화 보는 걸 좋아해요.', '음악 듣는 걸 좋아해요.', '요리하는 걸 좋아해요.'] },
+      ],
+    },
+    restaurant: {
+      title: { ko: '식당에서', ja: 'レストランで' }, icon: '🍜', color: '#e3b158',
+      turns: [
+        { question: '몇 분이세요?', options: ['한 명이에요.', '두 명이에요.', '세 명이에요.'] },
+        { question: '뭐 드시겠어요?', options: ['김치찌개 주세요.', '비빔밥 주세요.', '된장찌개로 주세요.'] },
+        { question: '더 필요하신 거 있으세요?', options: ['물 좀 주세요.', '없어요, 괜찮아요.', '수저 좀 주세요.'] },
+      ],
+    },
+  };
+
+  let currentChoiceKey = null;
+  let choiceLineIndex = 0;
+  const choiceThread = document.getElementById('choiceThread');
+  const choiceActionWrap = document.getElementById('choiceActionWrap');
+  const choiceScenarioRow = document.getElementById('choiceScenarioRow');
+
+  function renderChoiceScenarios(){
+    choiceScenarioRow.innerHTML = '';
+    Object.entries(CHOICE_SETS).forEach(([key, sc]) => {
+      const chip = document.createElement('div');
+      chip.className = 'cv-scenario-chip' + (key === currentChoiceKey ? ' active' : '');
+      chip.innerHTML = `<div class="icon">${sc.icon}</div><div class="name">${sc.title[lang]}</div>`;
+      chip.addEventListener('click', () => startChoiceScenario(key));
+      choiceScenarioRow.appendChild(chip);
+    });
+  }
+
+  function startChoiceScenario(key){
+    currentChoiceKey = key; choiceLineIndex = 0; choiceThread.innerHTML = '';
+    document.getElementById('choicePickerScreen').style.display = 'none';
+    document.getElementById('choiceChatScreen').style.display = 'block';
+    renderChoiceScenarios(); showNextChoiceTurn();
+  }
+
+  function backToChoicePicker(){
+    document.getElementById('choiceChatScreen').style.display = 'none';
+    document.getElementById('choicePickerScreen').style.display = 'block';
+    currentChoiceKey = null;
+    renderChoiceScenarios();
+  }
+  document.getElementById('choiceBackToPickerBtn').addEventListener('click', backToChoicePicker);
+
+  function currentChoiceScenario(){ return CHOICE_SETS[currentChoiceKey]; }
+
+  function showNextChoiceTurn(){
+    const sc = currentChoiceScenario();
+    if (!sc) return;
+    if (choiceLineIndex >= sc.turns.length){ choiceActionWrap.innerHTML = `<div class="cv-done">${t('done')}</div>`; return; }
+    renderChoiceQuestion(sc, sc.turns[choiceLineIndex]);
+  }
+
+  function addChoiceBubble(speaker, html, sc){
+    const row = document.createElement('div');
+    row.className = 'cv-row ' + speaker;
+    const avatar = speaker === 'partner'
+      ? `<div class="cv-avatar" style="background:${sc.color}22;border-color:${sc.color}">${sc.icon}</div>`
+      : '';
+    row.innerHTML = `${avatar}<div class="cv-bubble">${html}</div>`;
+    choiceThread.appendChild(row);
+    return row.querySelector('.cv-bubble');
+  }
+
+  function renderChoiceQuestion(sc, turn){
+    const bubbleEl = addChoiceBubble('partner', `${turn.question}<br><span class="cv-play">${t('listenBtn')}</span>`, sc);
+    bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(turn.question, e.currentTarget));
+
+    choiceActionWrap.innerHTML = `
+      <div class="cv-action">
+        <div class="cv-option-hint">${t('chooseAnswerHint')}</div>
+        <div class="cv-option-row">
+          ${turn.options.map((opt, i) => `<button class="cv-option-chip" data-idx="${i}">${opt}</button>`).join('')}
+        </div>
+      </div>`;
+
+    choiceActionWrap.querySelectorAll('.cv-option-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        renderChoiceUserTurn(sc, turn.options[parseInt(btn.dataset.idx, 10)]);
+      });
+    });
+  }
+
+  function renderChoiceUserTurn(sc, sentence){
+    const { result: target } = applyRules(sentence);
+    const bubbleEl = addChoiceBubble('user', `${sentence}<br><span class="cv-play">${t('listenBtn')}</span>`, sc);
+    bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(sentence, e.currentTarget));
+
+    choiceActionWrap.innerHTML = `
+      <div class="cv-action">
+        <div class="hint">${t('yourTurn')}</div>
+        <div class="cv-record-row">
+          <button class="cv-mic-btn" id="choiceMicBtn">●</button>
+          <div style="flex:1">
+            <div class="cv-record-status" id="choiceRecordStatus">${t('recordIdle')}</div>
+            <div class="cv-meter"><div class="cv-meter-fill" id="choiceMeterFill"></div></div>
+          </div>
+        </div>
+        <div id="choicePlaybackWrap" style="display:none; margin-top:10px;">
+          <audio id="choicePlaybackAudio" controls style="width:100%; height:32px;"></audio>
+        </div>
+        <div class="cv-btn-row">
+          <button class="cv-btn" id="choiceDiagnoseBtn" disabled>${t('diagnoseBtn')}</button>
+          <button class="cv-btn secondary" id="choiceReRecordBtn">${t('reRecordBtn')}</button>
+        </div>
+      </div>`;
+
+    setupChoiceRecording(sentence, bubbleEl);
+  }
+
+  function setupChoiceRecording(sentence, bubbleEl){
+    let audioContext, sourceNode, processorNode, gainNode, mediaStream;
+    let recordedChunks = [], recordedWavBlob = null, recordedUrl = null, recording = false;
+
+    const micBtn = document.getElementById('choiceMicBtn');
+    const recordStatus = document.getElementById('choiceRecordStatus');
+    const meterFill = document.getElementById('choiceMeterFill');
+    const diagnoseBtn = document.getElementById('choiceDiagnoseBtn');
+
+    async function startRecording(){
+      try { mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } }); }
+      catch (err) { recordStatus.textContent = t('ttsFailed'); return; }
+      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      sourceNode = audioContext.createMediaStreamSource(mediaStream);
+      processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+      gainNode = audioContext.createGain(); gainNode.gain.value = 0;
+      recordedChunks = [];
+      processorNode.onaudioprocess = (e) => {
+        const input = e.inputBuffer.getChannelData(0);
+        recordedChunks.push(new Float32Array(input));
+        let sum = 0; for (let i = 0; i < input.length; i++) sum += input[i]*input[i];
+        meterFill.style.width = Math.min(100, Math.sqrt(sum/input.length)*400) + '%';
+      };
+      sourceNode.connect(processorNode); processorNode.connect(gainNode); gainNode.connect(audioContext.destination);
+      recording = true; micBtn.classList.add('recording'); micBtn.textContent = '■';
+      recordStatus.textContent = t('recordingNow');
+      diagnoseBtn.disabled = true;
+    }
+
+    function stopRecording(){
+      recording = false; micBtn.classList.remove('recording'); micBtn.textContent = '●'; meterFill.style.width = '0%';
+      processorNode.disconnect(); sourceNode.disconnect(); gainNode.disconnect();
+      mediaStream.getTracks().forEach(tr => tr.stop());
+      const sampleRate = audioContext.sampleRate; audioContext.close();
+      recordedWavBlob = encodeWav(recordedChunks, sampleRate);
+      recordedUrl = URL.createObjectURL(recordedWavBlob);
+      const playbackAudio = document.getElementById('choicePlaybackAudio');
+      const playbackWrap = document.getElementById('choicePlaybackWrap');
+      playbackAudio.src = recordedUrl;
+      playbackWrap.style.display = 'block';
+      recordStatus.textContent = t('recordDone');
+      diagnoseBtn.disabled = false;
+    }
+
+    micBtn.addEventListener('click', () => { recording ? stopRecording() : startRecording(); });
+    document.getElementById('choiceReRecordBtn').addEventListener('click', () => {
+      recordedWavBlob = null; diagnoseBtn.disabled = true; recordStatus.textContent = t('recordIdle');
+      document.getElementById('choicePlaybackWrap').style.display = 'none';
+    });
+
+    diagnoseBtn.addEventListener('click', async () => {
+      if (!recordedWavBlob) return;
+      diagnoseBtn.disabled = true;
+      diagnoseBtn.textContent = t('diagnosing');
+      try {
+        const form = new FormData();
+        form.append('audio', recordedWavBlob, 'attempt.wav');
+        form.append('sentence', sentence);
+        const res = await fetch(`${BACKEND_URL}/api/pronunciation/assess`, { method: 'POST', body: form });
+        if (!res.ok) {
+          let detail = '';
+          try { const errJson = await res.json(); detail = errJson.error || ''; } catch (e2) {}
+          throw new Error(`(${res.status}) ${detail}`);
+        }
+        const data = await res.json();
+        renderDiagnosisBubble(bubbleEl, sentence, data, recordedUrl);
+        recordDiagnosis(data, { mode: 'choice', sentence, category: null }, recordedWavBlob);
+        choiceActionWrap.innerHTML = `<div class="cv-btn-row"><button class="cv-btn" id="choiceNextBtn">${t('nextBtn')}</button></div>`;
+        document.getElementById('choiceNextBtn').addEventListener('click', () => { choiceLineIndex++; showNextChoiceTurn(); });
+      } catch (err) {
+        console.error(err);
+        alert(t('ttsFailed') + '\n\n' + err.message);
+        diagnoseBtn.disabled = false;
+        diagnoseBtn.textContent = t('diagnoseBtn');
+      }
+    });
+  }
+
   // ================= 언어 토글 (양쪽 뷰 공유) =================
   document.getElementById('langJa').addEventListener('click', () => setLang('ja'));
   document.getElementById('langKo').addEventListener('click', () => setLang('ko'));
@@ -1922,6 +2263,10 @@ body { margin: 0; background: #171b24; }
     // 회화 연습 뷰 갱신 (진행 중이던 대화는 언어가 섞이지 않도록 초기화)
     renderScenarios();
     if (currentScenarioKey) { cvThread.innerHTML = ''; lineIndex = 0; showNextLine(); }
+
+    // 선택형 문장 연습 뷰 갱신
+    renderChoiceScenarios();
+    if (currentChoiceKey) { choiceThread.innerHTML = ''; choiceLineIndex = 0; showNextChoiceTurn(); }
 
     // 학습 기록 뷰 갱신 (이미 불러온 데이터가 있으면 재조회 없이 다시 그리기만)
     if (currentHistData.length > 0) renderAnalyticsUI();

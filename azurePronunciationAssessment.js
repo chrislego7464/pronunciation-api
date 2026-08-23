@@ -89,6 +89,62 @@ function assessPronunciationFromFile({ audioFilePath, referenceText, language = 
   });
 }
 
+/**
+ * 자유 발화(자유 대화) 전용: 목표 문장을 미리 모르는 상태에서 음성을 인식하고,
+ * Azure가 스스로 인식한 텍스트를 기준으로 발음 점수를 매긴다 (unscripted assessment).
+ * referenceText를 비워두면 Azure가 이 모드로 동작한다.
+ */
+function assessPronunciationUnscripted({ audioFilePath, language = 'ko-KR' }) {
+  return new Promise((resolve, reject) => {
+    const speechKey = process.env.AZURE_SPEECH_KEY;
+    const speechRegion = process.env.AZURE_SPEECH_REGION;
+    if (!speechKey || !speechRegion) {
+      reject(new Error('AZURE_SPEECH_KEY / AZURE_SPEECH_REGION 환경변수가 필요합니다.'));
+      return;
+    }
+
+    let audioBuffer;
+    try {
+      audioBuffer = fs.readFileSync(audioFilePath);
+    } catch (err) {
+      reject(err);
+      return;
+    }
+
+    const speechConfig = sdk.SpeechConfig.fromSubscription(speechKey, speechRegion);
+    speechConfig.speechRecognitionLanguage = language;
+    const audioConfig = sdk.AudioConfig.fromWavFileInput(audioBuffer);
+
+    const pronunciationConfig = new sdk.PronunciationAssessmentConfig(
+      '', // referenceText를 비우면 unscripted(자유 발화) 모드로 동작한다.
+      sdk.PronunciationAssessmentGradingSystem.HundredMark,
+      sdk.PronunciationAssessmentGranularity.Phoneme,
+      true
+    );
+
+    const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
+    pronunciationConfig.applyTo(recognizer);
+
+    recognizer.recognizeOnceAsync(
+      (result) => {
+        recognizer.close();
+        if (result.reason !== sdk.ResultReason.RecognizedSpeech) {
+          reject(new Error('음성 인식 실패: ' + result.reason));
+          return;
+        }
+        const raw = JSON.parse(
+          result.properties.getProperty(sdk.PropertyId.SpeechServiceResponse_JsonResult)
+        );
+        resolve(raw);
+      },
+      (err) => {
+        recognizer.close();
+        reject(err);
+      }
+    );
+  });
+}
+
 /** Azure 결과 + 우리 규칙 엔진을 합쳐 한국어 특화 오류 추정 라벨을 붙인다. */
 function annotateWithPhonology(azureRaw, referenceSentence) {
   const { notes } = applyRules(referenceSentence);
@@ -144,4 +200,4 @@ function annotateWithPhonology(azureRaw, referenceSentence) {
   };
 }
 
-module.exports = { assessPronunciationFromFile, annotateWithPhonology, LOW_SCORE_THRESHOLD };
+module.exports = { assessPronunciationFromFile, assessPronunciationUnscripted, annotateWithPhonology, LOW_SCORE_THRESHOLD };
