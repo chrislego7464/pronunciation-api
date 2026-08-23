@@ -147,6 +147,10 @@ body { margin: 0; background: #171b24; }
   cursor: pointer; padding: 9px 16px; margin-bottom: 18px;
 }
 .back-btn:hover { border-color: var(--gold); color: var(--gold); }
+.section-title {
+  font-family: var(--serif); font-size: 20px; font-weight: 700; color: var(--text);
+  margin: 0 0 18px;
+}
 
 .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
 .home-card {
@@ -432,6 +436,7 @@ body { margin: 0; background: #171b24; }
   </div>
 
   <button class="back-btn" id="backBtn" style="display:none">← <span data-i18n="backBtnLabel"></span></button>
+  <div class="section-title" id="sectionTitle" style="display:none"></div>
 
   <!-- ===== 홈 ===== -->
   <div id="homeView">
@@ -622,8 +627,8 @@ body { margin: 0; background: #171b24; }
     appTitle: { ko: '한국어 발음 쉐도잉', ja: '韓国語発音シャドーイング' },
     appSub: { ko: '문장 연습과 회화 연습을 한 곳에서.', ja: '文の練習と会話の練習をひとつの画面で。' },
     backendLabel: { ko: '백엔드 주소', ja: 'バックエンドのアドレス' },
-    modeSentence: { ko: '📝 문장 연습', ja: '📝 文の練習' },
-    modeConversation: { ko: '💬 회화 연습', ja: '💬 会話練習' },
+    modeSentence: { ko: '문장 연습', ja: '文の練習' },
+    modeConversation: { ko: '회화 연습', ja: '会話練習' },
 
     card1Title: { ko: '① 문장 고르기', ja: '① 文を選ぶ' },
     card2TitleListen: { ko: '② 발음 듣기', ja: '② 発音を聞く' },
@@ -662,8 +667,8 @@ body { margin: 0; background: #171b24; }
     detailHide: { ko: '접기', ja: '閉じる' },
     myRecording: { ko: '내 녹음', ja: '自分の録音' },
 
-    modeAnalytics: { ko: '📊 학습 기록', ja: '📊 学習記録' },
-    modeCustom: { ko: '✏️ 커스텀 문장', ja: '✏️ カスタム文' },
+    modeAnalytics: { ko: '학습 기록', ja: '学習記録' },
+    modeCustom: { ko: '커스텀 문장', ja: 'カスタム文' },
     backBtnLabel: { ko: '홈으로', ja: 'ホームへ' },
     customTitle: { ko: '✏️ 직접 문장 입력하기', ja: '✏️ 文を直接入力する' },
     customHint: {
@@ -1024,11 +1029,24 @@ body { margin: 0; background: #171b24; }
 
   // ================= 모드 탭 전환 =================
   const VIEW_IDS = { home: 'homeView', sentence: 'sentenceView', custom: 'customView', conversation: 'conversationView', analytics: 'analyticsView' };
+  const MODE_ICONS = { sentence: '📝', custom: '✏️', conversation: '💬', analytics: '📊' };
+  const MODE_STRING_KEYS = { sentence: 'modeSentence', custom: 'modeCustom', conversation: 'modeConversation', analytics: 'modeAnalytics' };
+  let currentMode = 'home';
+
+  function updateSectionTitle(){
+    const el = document.getElementById('sectionTitle');
+    if (currentMode === 'home') { el.style.display = 'none'; return; }
+    el.textContent = `${MODE_ICONS[currentMode]} ${t(MODE_STRING_KEYS[currentMode])}`;
+    el.style.display = 'block';
+  }
+
   function setMode(mode){
+    currentMode = mode;
     Object.entries(VIEW_IDS).forEach(([m, id]) => {
       document.getElementById(id).style.display = (mode === m) ? '' : 'none';
     });
     document.getElementById('backBtn').style.display = (mode === 'home') ? 'none' : 'inline-flex';
+    updateSectionTitle();
     if (mode === 'analytics') renderAnalytics();
   }
   document.getElementById('homeSentenceBtn').addEventListener('click', () => setMode('sentence'));
@@ -1675,6 +1693,7 @@ body { margin: 0; background: #171b24; }
     document.getElementById('langKo').classList.toggle('active', lang === 'ko');
     applyStaticI18n();
     updateAccountUI();
+    updateSectionTitle();
     setAuthMode(authMode);
 
     // 문장 연습 뷰 갱신
