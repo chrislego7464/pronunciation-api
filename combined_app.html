@@ -190,6 +190,7 @@ body { margin: 0; background: #171b24; }
   border-radius: 6px; padding: 4px 9px; cursor: pointer;
 }
 .sd-chip:hover { border-color: var(--gold); color: var(--text); }
+.sd-chip.selected { background: var(--gold); border-color: var(--gold); color: #201705; font-weight: 700; }
 
 .sd-input {
   width: 100%; background: transparent; border: none; color: var(--text);
@@ -215,6 +216,7 @@ body { margin: 0; background: #171b24; }
 .sd-target-preview .hl[data-rule="격음화"] { border-bottom-color: var(--purple); color: var(--purple); }
 .sd-target-preview .hl[data-rule="유음화"] { border-bottom-color: var(--rose); color: var(--rose); }
 .sd-target-preview .hl[data-rule="ㅎ탈락"] { border-bottom-color: var(--gray); color: var(--gray); }
+.sd-target-preview .hl[data-rule="받침규칙"] { border-bottom-color: var(--coral); color: var(--coral); }
 .sd-rule-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .sd-rule-tag { font-family: var(--mono); font-size: 11px; border-radius: 999px; padding: 3px 9px; border: 1px solid; }
 .sd-rule-tag[data-rule="경음화"]  { color: var(--gold);  border-color: var(--gold); }
@@ -224,6 +226,7 @@ body { margin: 0; background: #171b24; }
 .sd-rule-tag[data-rule="격음화"]  { color: var(--purple);border-color: var(--purple); }
 .sd-rule-tag[data-rule="유음화"]  { color: var(--rose);  border-color: var(--rose); }
 .sd-rule-tag[data-rule="ㅎ탈락"]  { color: var(--gray);  border-color: var(--gray); }
+.sd-rule-tag[data-rule="받침규칙"] { color: var(--coral); border-color: var(--coral); }
 
 .sd-record-row { display: flex; align-items: center; gap: 16px; }
 .sd-mic-btn {
@@ -298,6 +301,7 @@ body { margin: 0; background: #171b24; }
 .an-bar-fill[data-rule="격음화"] { background: var(--purple); }
 .an-bar-fill[data-rule="유음화"] { background: var(--rose); }
 .an-bar-fill[data-rule="ㅎ탈락"] { background: var(--gray); }
+.an-bar-fill[data-rule="받침규칙"] { background: var(--coral); }
 .an-rule-score { font-family: var(--mono); font-size: 12px; color: var(--text-faint); width: 36px; text-align: right; flex-shrink: 0; }
 .an-empty { text-align: center; padding: 30px 10px; color: var(--text-faint); font-size: 14px; }
 
@@ -469,7 +473,7 @@ body { margin: 0; background: #171b24; }
     <div class="sd-card">
       <h2 data-i18n="card1Title"></h2>
       <div id="exampleChips"></div>
-      <input class="sd-input" id="sentenceInput" value="" readonly>
+      <input class="sd-input" id="sentenceInput" value="" readonly style="display:none;">
     </div>
 
     <div class="sd-card">
@@ -608,12 +612,16 @@ body { margin: 0; background: #171b24; }
       if (neu === 'ㄹ' && next.cho === 'ㄴ'){ next.cho = 'ㄹ'; notes.push({pos:i, rule:'유음화'}); continue; }
       if (NASAL[neu] && (next.cho === 'ㄴ' || next.cho === 'ㅁ')){ cur.jong = NASAL[neu]; notes.push({pos:i, rule:'비음화'}); continue; }
       if (TENSE[next.cho] && ['ㄱ','ㄷ','ㅂ'].includes(neu)){ cur.jong = neu; next.cho = TENSE[next.cho]; notes.push({pos:i, rule:'경음화'}); continue; }
-      if (neu !== cur.jong) cur.jong = neu;
+      if (neu !== cur.jong) { notes.push({pos:i, rule:'받침규칙'}); cur.jong = neu; }
     }
     for (let i = 0; i < syll.length; i++){
       const s = syll[i]; if (typeof s !== 'object') continue;
       const next = syll[i+1];
-      if (i === syll.length - 1 || typeof next !== 'object') s.jong = NEUTRALIZE[s.jong];
+      if (i === syll.length - 1 || typeof next !== 'object'){
+        const neu2 = NEUTRALIZE[s.jong];
+        if (neu2 !== s.jong) notes.push({pos:i, rule:'받침규칙'});
+        s.jong = neu2;
+      }
     }
     const result = syll.map(s => typeof s === 'string' ? s : compose(s.cho, s.jung, s.jong)).join('');
     return { result, notes };
@@ -732,6 +740,7 @@ body { margin: 0; background: #171b24; }
     '격음화': { ko: '격음화', ja: '激音化' },
     '유음화': { ko: '유음화', ja: '流音化' },
     'ㅎ탈락': { ko: 'ㅎ탈락', ja: 'ㅎ(h)の脱落' },
+    '받침규칙': { ko: '받침 대표음', ja: 'パッチムの代表音' },
   };
   const CATEGORY_LABELS = {
     '경음화': RULE_LABELS['경음화'], '비음화': RULE_LABELS['비음화'], '연음': RULE_LABELS['연음'],
@@ -1108,6 +1117,7 @@ body { margin: 0; background: #171b24; }
   };
   const chipWrap = document.getElementById('exampleChips');
   const categoryOpenState = {}; // 기본: 전부 접힘
+  let selectedSentenceText = '';
   function renderChips(){
     chipWrap.innerHTML = '';
     const catRow = document.createElement('div');
@@ -1128,11 +1138,15 @@ body { margin: 0; background: #171b24; }
         const row = document.createElement('div');
         row.className = 'sd-chips open';
         sentences.forEach(ex => {
-          const c = document.createElement('span'); c.className = 'sd-chip'; c.textContent = ex;
+          const c = document.createElement('span');
+          c.className = 'sd-chip' + (ex === selectedSentenceText ? ' selected' : '');
+          c.textContent = ex;
           c.addEventListener('click', () => {
+            selectedSentenceText = ex;
             document.getElementById('sentenceInput').value = ex;
             updateTarget();
             resetSentenceRecording();
+            renderChips();
           });
           row.appendChild(c);
         });

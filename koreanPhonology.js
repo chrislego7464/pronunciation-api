@@ -52,6 +52,10 @@ function applyRules(text) {
     if (next.cho === 'ㅇ') {
       if (cur.jong === 'ㅇ') continue;
       if (cur.jong === 'ㅎ') { cur.jong = ''; notes.push({ pos: i, rule: 'ㅎ탈락' }); continue; }
+      // ㄶ/ㅀ은 다른 겹받침과 달리 ㅎ이 사라지고 남은 자음(ㄴ/ㄹ)이 그대로 다음 음절
+      // 초성으로 이동한다 (많아요→마나요, 싫어요→시러요 — "만하요/실허요"가 아님).
+      if (cur.jong === 'ㄶ') { next.cho = 'ㄴ'; cur.jong = ''; notes.push({ pos: i, rule: 'ㅎ탈락' }); continue; }
+      if (cur.jong === 'ㅀ') { next.cho = 'ㄹ'; cur.jong = ''; notes.push({ pos: i, rule: 'ㅎ탈락' }); continue; }
       if (COMPOUND_SPLIT[cur.jong]) {
         const [stay, moved] = COMPOUND_SPLIT[cur.jong];
         cur.jong = stay; next.cho = moved;
@@ -80,13 +84,17 @@ function applyRules(text) {
     if (neu === 'ㄹ' && next.cho === 'ㄴ') { next.cho = 'ㄹ'; notes.push({ pos: i, rule: '유음화' }); continue; }
     if (NASAL[neu] && (next.cho === 'ㄴ' || next.cho === 'ㅁ')) { cur.jong = NASAL[neu]; notes.push({ pos: i, rule: '비음화' }); continue; }
     if (TENSE[next.cho] && ['ㄱ','ㄷ','ㅂ'].includes(neu)) { cur.jong = neu; next.cho = TENSE[next.cho]; notes.push({ pos: i, rule: '경음화' }); continue; }
-    if (neu !== cur.jong) cur.jong = neu;
+    if (neu !== cur.jong) { notes.push({ pos: i, rule: '받침규칙' }); cur.jong = neu; }
   }
   for (let i = 0; i < syll.length; i++) {
     const s = syll[i];
     if (typeof s !== 'object') continue;
     const next = syll[i + 1];
-    if (i === syll.length - 1 || typeof next !== 'object') s.jong = NEUTRALIZE[s.jong];
+    if (i === syll.length - 1 || typeof next !== 'object') {
+      const neu2 = NEUTRALIZE[s.jong];
+      if (neu2 !== s.jong) notes.push({ pos: i, rule: '받침규칙' });
+      s.jong = neu2;
+    }
   }
   const result = syll.map((s) => (typeof s === 'string' ? s : compose(s.cho, s.jung, s.jong))).join('');
   return { result, notes };
