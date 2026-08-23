@@ -1129,7 +1129,11 @@ body { margin: 0; background: #171b24; }
         row.className = 'sd-chips open';
         sentences.forEach(ex => {
           const c = document.createElement('span'); c.className = 'sd-chip'; c.textContent = ex;
-          c.addEventListener('click', () => { document.getElementById('sentenceInput').value = ex; updateTarget(); playTTS(ex, c); });
+          c.addEventListener('click', () => {
+            document.getElementById('sentenceInput').value = ex;
+            updateTarget();
+            resetSentenceRecording();
+          });
           row.appendChild(c);
         });
         block.appendChild(row);
@@ -1230,7 +1234,10 @@ body { margin: 0; background: #171b24; }
     updateCustomTarget();
   });
 
-  document.getElementById('customApplyBtn').addEventListener('click', () => { updateCustomTarget(); });
+  document.getElementById('customApplyBtn').addEventListener('click', () => {
+    updateCustomTarget();
+    resetCustomRecording();
+  });
   document.getElementById('customInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('customApplyBtn').click();
   });
@@ -1308,11 +1315,13 @@ body { margin: 0; background: #171b24; }
   }
 
   micBtn.addEventListener('click', () => { spRecording ? spStopRecording() : spStartRecording(); });
-  document.getElementById('resetBtn').addEventListener('click', () => {
+  function resetSentenceRecording(){
+    if (spRecording) spStopRecording();
     spRecordedWavBlob = null; playbackWrap.style.display = 'none';
     recordState = 'idle'; updateRecordStatusText(); diagnoseBtn.disabled = true;
     lastResultData = null; document.getElementById('resultWrap').innerHTML = '';
-  });
+  }
+  document.getElementById('resetBtn').addEventListener('click', resetSentenceRecording);
 
   diagnoseBtn.addEventListener('click', async () => {
     const sentence = document.getElementById('sentenceInput').value.trim();
@@ -1387,11 +1396,13 @@ body { margin: 0; background: #171b24; }
   }
 
   customMicBtn.addEventListener('click', () => { cuRecording ? cuStopRecording() : cuStartRecording(); });
-  document.getElementById('customResetBtn').addEventListener('click', () => {
+  function resetCustomRecording(){
+    if (cuRecording) cuStopRecording();
     cuRecordedWavBlob = null; customPlaybackWrap.style.display = 'none';
     cuRecordState = 'idle'; updateCustomRecordStatusText(); customDiagnoseBtn.disabled = true;
     document.getElementById('customResultWrap').innerHTML = '';
-  });
+  }
+  document.getElementById('customResetBtn').addEventListener('click', resetCustomRecording);
 
   customDiagnoseBtn.addEventListener('click', async () => {
     const sentence = document.getElementById('customInput').value.trim();
