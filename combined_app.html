@@ -355,6 +355,20 @@ body { margin: 0; background: #171b24; }
 .an-cal-cell.selected .an-cal-dot { background: #201705; }
 
 .an-day-hint { text-align: center; padding: 14px 8px; color: var(--text-faint); font-size: 12.5px; }
+
+.an-period-list { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+.an-period-item {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 11px 14px; font-family: var(--sans); font-size: 13.5px; color: var(--text); cursor: pointer;
+}
+.an-period-item:hover { border-color: var(--gold); }
+.an-period-item.selected { border-color: var(--gold); background: rgba(227,177,88,0.08); color: var(--gold); }
+.an-period-item-count { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+.an-period-item.selected .an-period-item-count { color: var(--gold); }
+
+.an-period-summary-box { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.an-period-summary-title { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
 .an-day-header { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin: 10px 0 8px; }
 .an-day-list { display: flex; flex-direction: column; gap: 6px; }
 .an-day-row { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; }
@@ -448,6 +462,13 @@ body { margin: 0; background: #171b24; }
 </style>
 </head>
 <body>
+
+<div class="consent-overlay" id="periodDetailModal" style="display:none">
+  <div class="consent-box" style="max-width: 480px;">
+    <button class="auth-close-btn" id="periodDetailCloseBtn" aria-label="close">✕</button>
+    <div id="periodDetailContent"></div>
+  </div>
+</div>
 
 <div class="consent-overlay" id="authModal" style="display:none">
   <div class="consent-box">
@@ -821,8 +842,12 @@ body { margin: 0; background: #171b24; }
     scopeConversation: { ko: '회화 연습', ja: '会話練習' },
     secUnit: { ko: '초', ja: '秒' },
     avgResponseLatency: { ko: '평균 응답 속도', ja: '平均応答速度' },
-    selectDayHint: { ko: '점이 찍힌 날짜를 눌러 그날의 기록을 확인하세요.', ja: '点が付いた日付を押すと、その日の記録を確認できます。' },
+    selectPeriodHint: { ko: '위에서 날짜(또는 주, 달)를 선택하면 결과가 나와요.', ja: '上で日付（または週、月）を選ぶと結果が表示されます。' },
     dayCount: { ko: (n) => `${n}회 진단`, ja: (n) => `${n}回診断` },
+    countUnit: { ko: '회', ja: '回' },
+    viewDetailBtn: { ko: '자세히 보기', ja: '詳しく見る' },
+    noRuleData: { ko: '이 기간엔 규칙 관련 기록이 없어요.', ja: 'この期間はルール関連の記録がありません。' },
+    sentenceListTitle: { ko: '연습한 문장', ja: '練習した文' },
     totalPractice: { ko: '총 연습 횟수', ja: '総練習回数' },
     avgScore: { ko: '평균 점수', ja: '平均点' },
     resetHistory: { ko: '기록 초기화', ja: '記録をリセット' },
@@ -1074,14 +1099,35 @@ body { margin: 0; background: #171b24; }
   let currentHistData = [];
   let filteredHistData = [];
   let calendarYear, calendarMonth; // calendarMonth: 0-indexed
-  let selectedDate = null; // 'YYYY-MM-DD'
-  let trendPeriod = 'day'; // 'day' | 'week' | 'month'
-  let trendMetric = 'PronScore'; // 'PronScore' | 'AccuracyScore' | 'FluencyScore' | 'CompletenessScore'
-  let analyticsScope = 'all'; // 'all' | 'sentence' | 'conversation'  ('sentence' = 문장연습+커스텀문장 묶음)
+  let selectedDate = null;   // 'YYYY-MM-DD' (일별)
+  let selectedWeek = null;   // 그 주의 일요일 날짜 키 (주별)
+  let selectedMonth = null;  // 'YYYY-MM' (월별)
+  let periodType = 'day';    // 'day' | 'week' | 'month'
+  let analyticsScope = 'all'; // 'all' | 'sentence' | 'conversation'
 
   function dateKeyOf(ts){
     const d = new Date(ts);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  const ORDINAL_KO = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째'];
+  const ORDINAL_JA = ['第1', '第2', '第3', '第4', '第5', '第6'];
+  function weekLabel(weekKey){
+    const [y, m, d] = weekKey.split('-').map(Number);
+    const idx = Math.min(Math.ceil(d / 7) - 1, ORDINAL_KO.length - 1);
+    return lang === 'ko' ? `${y}년 ${m}월 ${ORDINAL_KO[idx]}주` : `${y}年${m}月${ORDINAL_JA[idx]}週`;
+  }
+  function monthLabel(monthKey){
+    const [y, m] = monthKey.split('-').map(Number);
+    return lang === 'ko' ? `${y}년 ${m}월` : `${y}年${m}月`;
+  }
+  function weekKeyOf(ts){
+    const d = new Date(ts);
+    const sun = new Date(d); sun.setDate(d.getDate() - d.getDay());
+    return dateKeyOf(sun.getTime());
+  }
+  function monthKeyOf(ts){
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
 
   async function renderAnalytics(){
@@ -1108,11 +1154,17 @@ body { margin: 0; background: #171b24; }
       wrap.innerHTML = `<div class="an-empty">${t('noHistoryYet')}</div>`;
       return;
     }
-    if (calendarYear === undefined) {
-      const now = new Date();
-      calendarYear = now.getFullYear(); calendarMonth = now.getMonth();
-    }
     renderAnalyticsUI();
+  }
+
+  function wireScopeTabs(wrap){
+    wrap.querySelectorAll('.an-scope-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        analyticsScope = btn.dataset.scope;
+        selectedDate = null; selectedWeek = null; selectedMonth = null;
+        renderAnalyticsUI();
+      });
+    });
   }
 
   function renderAnalyticsUI(){
@@ -1122,139 +1174,56 @@ body { margin: 0; background: #171b24; }
       if (analyticsScope === 'sentence') return h.mode === 'sentence' || h.mode === 'custom' || h.mode === 'choice';
       return h.mode === 'conversation';
     });
-    if (hist.length === 0){
-      wrap.innerHTML = `
-        <div class="an-scope-tabs">
-          <button class="an-scope-tab${analyticsScope === 'all' ? ' active' : ''}" data-scope="all">${t('scopeAll')}</button>
-          <button class="an-scope-tab${analyticsScope === 'sentence' ? ' active' : ''}" data-scope="sentence">${t('scopeSentence')}</button>
-          <button class="an-scope-tab${analyticsScope === 'conversation' ? ' active' : ''}" data-scope="conversation">${t('scopeConversation')}</button>
-        </div>
-        <div class="an-empty">${t('noHistoryYet')}</div>
-      `;
-      wrap.querySelectorAll('.an-scope-tab').forEach(btn => {
-        btn.addEventListener('click', () => { analyticsScope = btn.dataset.scope; renderAnalyticsUI(); });
-      });
-      return;
-    }
     filteredHistData = hist;
-    const totalCount = hist.length;
-    const avgOverall = Math.round((hist.reduce((s, h) => s + (h.overall.PronScore || 0), 0) / totalCount) * 10) / 10;
 
-    const ruleStats = {};
-    hist.forEach(h => {
-      (h.ruleHits || []).forEach(hit => {
-        if (!ruleStats[hit.rule]) ruleStats[hit.rule] = { count: 0, flagged: 0, scoreSum: 0, scoreCount: 0 };
-        const s = ruleStats[hit.rule];
-        s.count++;
-        if (hit.flagged) s.flagged++;
-        if (typeof hit.score === 'number') { s.scoreSum += hit.score; s.scoreCount++; }
-      });
-    });
-    const ruleRows = Object.entries(ruleStats).map(([rule, s]) => ({
-      rule,
-      avg: s.scoreCount ? Math.round(s.scoreSum / s.scoreCount) : null,
-      flagRate: s.count ? Math.round((s.flagged / s.count) * 100) : 0,
-      count: s.count,
-    })).sort((a, b) => (a.avg ?? 100) - (b.avg ?? 100));
-
-    let summaryHtml = '';
-    if (ruleRows.length){
-      const worst = ruleRows[0];
-      summaryHtml = `<div class="an-summary">${t('summaryTemplate', ruleLabel(worst.rule), worst.avg ?? '–', worst.flagRate)}</div>`;
-    }
-
-    wrap.innerHTML = `
+    const scopeTabsHtml = `
       <div class="an-scope-tabs">
         <button class="an-scope-tab${analyticsScope === 'all' ? ' active' : ''}" data-scope="all">${t('scopeAll')}</button>
         <button class="an-scope-tab${analyticsScope === 'sentence' ? ' active' : ''}" data-scope="sentence">${t('scopeSentence')}</button>
         <button class="an-scope-tab${analyticsScope === 'conversation' ? ' active' : ''}" data-scope="conversation">${t('scopeConversation')}</button>
-      </div>
-      <div class="an-stat-row">
-        <div class="an-stat"><div class="num">${totalCount}</div><div class="label">${t('totalPractice')}</div></div>
-        <div class="an-stat"><div class="num">${avgOverall}</div><div class="label">${t('avgScore')}</div></div>
-      </div>
-      ${summaryHtml}
+      </div>`;
 
-      <div class="an-section-title">${t('trendTitle')}</div>
-      <div class="an-metric-tabs">
-        <button class="an-metric-tab${trendMetric === 'PronScore' ? ' active' : ''}" data-metric="PronScore">${t('statOverall')}</button>
-        <button class="an-metric-tab${trendMetric === 'AccuracyScore' ? ' active' : ''}" data-metric="AccuracyScore">${t('statAccuracy')}</button>
-        <button class="an-metric-tab${trendMetric === 'FluencyScore' ? ' active' : ''}" data-metric="FluencyScore">${t('statFluency')}</button>
-        <button class="an-metric-tab${trendMetric === 'CompletenessScore' ? ' active' : ''}" data-metric="CompletenessScore">${t('statCompleteness')}</button>
-      </div>
+    if (hist.length === 0){
+      wrap.innerHTML = scopeTabsHtml + `<div class="an-empty">${t('noHistoryYet')}</div>`;
+      wireScopeTabs(wrap);
+      return;
+    }
+
+    wrap.innerHTML = `
+      ${scopeTabsHtml}
       <div class="an-period-tabs">
-        <button class="an-period-tab${trendPeriod === 'day' ? ' active' : ''}" data-period="day">${t('periodDay')}</button>
-        <button class="an-period-tab${trendPeriod === 'week' ? ' active' : ''}" data-period="week">${t('periodWeek')}</button>
-        <button class="an-period-tab${trendPeriod === 'month' ? ' active' : ''}" data-period="month">${t('periodMonth')}</button>
+        <button class="an-period-tab${periodType === 'day' ? ' active' : ''}" data-period="day">${t('periodDay')}</button>
+        <button class="an-period-tab${periodType === 'week' ? ' active' : ''}" data-period="week">${t('periodWeek')}</button>
+        <button class="an-period-tab${periodType === 'month' ? ' active' : ''}" data-period="month">${t('periodMonth')}</button>
       </div>
-      <div id="anTrendChart"></div>
-
-      <div class="an-section-title">${t('calendarTitle')}</div>
-      <div id="anCalendar"></div>
-      <div id="anSelectedDayDetail"></div>
-
-      <div class="an-section-title">${t('ruleBreakdownTitle')}</div>
-      <div class="an-rule-list">
-        ${ruleRows.map(r => `
-          <div class="an-rule-row">
-            <span class="an-rule-name">${ruleLabel(r.rule)}</span>
-            <div class="an-bar-track"><div class="an-bar-fill" data-rule="${r.rule}" style="width:${r.avg ?? 0}%"></div></div>
-            <span class="an-rule-score">${r.avg ?? '–'}${t('scoreUnit')}</span>
-          </div>
-        `).join('')}
-      </div>
+      <div id="anPeriodNav"></div>
+      <div id="anPeriodSummary"></div>
     `;
 
+    wireScopeTabs(wrap);
     wrap.querySelectorAll('.an-period-tab').forEach(btn => {
-      btn.addEventListener('click', () => { trendPeriod = btn.dataset.period; renderAnalyticsUI(); });
-    });
-    wrap.querySelectorAll('.an-metric-tab').forEach(btn => {
-      btn.addEventListener('click', () => { trendMetric = btn.dataset.metric; renderAnalyticsUI(); });
-    });
-    wrap.querySelectorAll('.an-scope-tab').forEach(btn => {
-      btn.addEventListener('click', () => { analyticsScope = btn.dataset.scope; selectedDate = null; renderAnalyticsUI(); });
+      btn.addEventListener('click', () => { periodType = btn.dataset.period; renderPeriodNav(); renderPeriodSummary(); });
     });
 
-    renderTrendChart();
-    renderCalendar();
-    renderSelectedDayDetail();
+    renderPeriodNav();
+    renderPeriodSummary();
   }
 
-  function renderTrendChart(){
-    const container = document.getElementById('anTrendChart');
-    const groups = new Map(); // key -> { sum, count }
-    filteredHistData.forEach(h => {
-      const d = new Date(h.ts);
-      let key;
-      if (trendPeriod === 'day') key = dateKeyOf(h.ts);
-      else if (trendPeriod === 'month') key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      else { const sun = new Date(d); sun.setDate(d.getDate() - d.getDay()); key = dateKeyOf(sun.getTime()); }
-      if (!groups.has(key)) groups.set(key, { sum: 0, count: 0 });
-      const g = groups.get(key);
-      g.sum += (h.overall[trendMetric] || 0); g.count++;
-    });
-    const keys = [...groups.keys()].sort().slice(-14);
-    if (keys.length === 0) { container.innerHTML = ''; return; }
-    container.innerHTML = `<div class="an-trend-bars">${keys.map(k => {
-      const g = groups.get(k);
-      const avg = Math.round(g.sum / g.count);
-      const label = trendPeriod === 'week' ? k.slice(5) : k.slice(5);
-      return `<div class="an-trend-col" title="${k}">
-        <div class="an-trend-bar-track"><div class="an-trend-bar" style="height:${avg}%"></div></div>
-        <div class="an-trend-val">${avg}</div>
-        <div class="an-trend-label">${label}</div>
-      </div>`;
-    }).join('')}</div>`;
+  function renderPeriodNav(){
+    const container = document.getElementById('anPeriodNav');
+    if (periodType === 'day') renderCalendar(container);
+    else if (periodType === 'week') renderWeekList(container);
+    else renderMonthList(container);
   }
 
-  function renderCalendar(){
-    const container = document.getElementById('anCalendar');
+  function renderCalendar(container){
     const byDate = new Map();
     filteredHistData.forEach(h => {
       const k = dateKeyOf(h.ts);
       if (!byDate.has(k)) byDate.set(k, []);
       byDate.get(k).push(h);
     });
+    if (calendarYear === undefined) { const now = new Date(); calendarYear = now.getFullYear(); calendarMonth = now.getMonth(); }
 
     const firstDay = new Date(calendarYear, calendarMonth, 1);
     const startWeekday = firstDay.getDay();
@@ -1289,41 +1258,148 @@ body { margin: 0; background: #171b24; }
 
     document.getElementById('anCalPrev').addEventListener('click', () => {
       calendarMonth--; if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
-      renderCalendar();
+      renderCalendar(container);
     });
     document.getElementById('anCalNext').addEventListener('click', () => {
       calendarMonth++; if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
-      renderCalendar();
+      renderCalendar(container);
     });
     container.querySelectorAll('.an-cal-cell.has-data').forEach(cell => {
       cell.addEventListener('click', () => {
         selectedDate = cell.dataset.date;
-        renderCalendar();
-        renderSelectedDayDetail();
+        renderCalendar(container);
+        renderPeriodSummary();
       });
     });
   }
 
-  function renderSelectedDayDetail(){
-    const container = document.getElementById('anSelectedDayDetail');
-    if (!selectedDate) { container.innerHTML = `<div class="an-day-hint">${t('selectDayHint')}</div>`; return; }
-    const dayHist = filteredHistData.filter(h => dateKeyOf(h.ts) === selectedDate);
-    if (dayHist.length === 0) { container.innerHTML = `<div class="an-day-hint">${t('selectDayHint')}</div>`; return; }
-    const dayAvg = Math.round(dayHist.reduce((s, h) => s + (h.overall.PronScore || 0), 0) / dayHist.length);
-    const locale = lang === 'ko' ? 'ko-KR' : 'ja-JP';
+  function renderWeekList(container){
+    const weekMap = new Map();
+    filteredHistData.forEach(h => {
+      const wk = weekKeyOf(h.ts);
+      weekMap.set(wk, (weekMap.get(wk) || 0) + 1);
+    });
+    const weeks = [...weekMap.keys()].sort().reverse();
+    container.innerHTML = `<div class="an-period-list">${weeks.map(wk => `
+      <button class="an-period-item${wk === selectedWeek ? ' selected' : ''}" data-week="${wk}">
+        <span>${weekLabel(wk)}</span><span class="an-period-item-count">${weekMap.get(wk)}${t('countUnit')}</span>
+      </button>
+    `).join('')}</div>`;
+    container.querySelectorAll('.an-period-item').forEach(btn => {
+      btn.addEventListener('click', () => { selectedWeek = btn.dataset.week; renderWeekList(container); renderPeriodSummary(); });
+    });
+  }
+
+  function renderMonthList(container){
+    const monthMap = new Map();
+    filteredHistData.forEach(h => {
+      const mk = monthKeyOf(h.ts);
+      monthMap.set(mk, (monthMap.get(mk) || 0) + 1);
+    });
+    const months = [...monthMap.keys()].sort().reverse();
+    container.innerHTML = `<div class="an-period-list">${months.map(mk => `
+      <button class="an-period-item${mk === selectedMonth ? ' selected' : ''}" data-month="${mk}">
+        <span>${monthLabel(mk)}</span><span class="an-period-item-count">${monthMap.get(mk)}${t('countUnit')}</span>
+      </button>
+    `).join('')}</div>`;
+    container.querySelectorAll('.an-period-item').forEach(btn => {
+      btn.addEventListener('click', () => { selectedMonth = btn.dataset.month; renderMonthList(container); renderPeriodSummary(); });
+    });
+  }
+
+  function getSelectedPeriodHist(){
+    if (periodType === 'day') {
+      if (!selectedDate) return null;
+      return filteredHistData.filter(h => dateKeyOf(h.ts) === selectedDate);
+    }
+    if (periodType === 'week') {
+      if (!selectedWeek) return null;
+      return filteredHistData.filter(h => weekKeyOf(h.ts) === selectedWeek);
+    }
+    if (!selectedMonth) return null;
+    return filteredHistData.filter(h => monthKeyOf(h.ts) === selectedMonth);
+  }
+
+  function currentPeriodLabel(){
+    if (periodType === 'day') return selectedDate;
+    if (periodType === 'week') return weekLabel(selectedWeek);
+    return monthLabel(selectedMonth);
+  }
+
+  function renderPeriodSummary(){
+    const container = document.getElementById('anPeriodSummary');
+    const periodHist = getSelectedPeriodHist();
+    if (!periodHist || periodHist.length === 0) {
+      container.innerHTML = `<div class="an-day-hint">${t('selectPeriodHint')}</div>`;
+      return;
+    }
+    const count = periodHist.length;
+    const avg = (field) => Math.round(periodHist.reduce((s, h) => s + (h.overall[field] || 0), 0) / count);
+
     container.innerHTML = `
-      <div class="an-day-header">${selectedDate} · ${t('dayCount', dayHist.length)} · ${t('avgScore')} ${dayAvg}${t('scoreUnit')}</div>
+      <div class="an-period-summary-box">
+        <div class="an-period-summary-title">${currentPeriodLabel()}</div>
+        <div class="an-stat-row">
+          <div class="an-stat"><div class="num">${count}</div><div class="label">${t('totalPractice')}</div></div>
+          <div class="an-stat"><div class="num">${avg('PronScore')}</div><div class="label">${t('statOverall')}</div></div>
+        </div>
+        <div class="an-stat-row">
+          <div class="an-stat"><div class="num">${avg('AccuracyScore')}</div><div class="label">${t('statAccuracy')}</div></div>
+          <div class="an-stat"><div class="num">${avg('FluencyScore')}</div><div class="label">${t('statFluency')}</div></div>
+          <div class="an-stat"><div class="num">${avg('CompletenessScore')}</div><div class="label">${t('statCompleteness')}</div></div>
+        </div>
+        <button class="sd-btn secondary" id="anDetailBtn" style="width:100%; margin-top:10px;">${t('viewDetailBtn')}</button>
+      </div>
+    `;
+    document.getElementById('anDetailBtn').addEventListener('click', () => openPeriodDetailOverlay(periodHist));
+  }
+
+  function openPeriodDetailOverlay(periodHist){
+    const content = document.getElementById('periodDetailContent');
+    const locale = lang === 'ko' ? 'ko-KR' : 'ja-JP';
+
+    const ruleStats = {};
+    periodHist.forEach(h => {
+      (h.ruleHits || []).forEach(hit => {
+        if (!ruleStats[hit.rule]) ruleStats[hit.rule] = { count: 0, flagged: 0, scoreSum: 0, scoreCount: 0 };
+        const s = ruleStats[hit.rule];
+        s.count++;
+        if (hit.flagged) s.flagged++;
+        if (typeof hit.score === 'number') { s.scoreSum += hit.score; s.scoreCount++; }
+      });
+    });
+    const ruleRows = Object.entries(ruleStats).map(([rule, s]) => ({
+      rule, avg: s.scoreCount ? Math.round(s.scoreSum / s.scoreCount) : null,
+    })).sort((a, b) => (a.avg ?? 100) - (b.avg ?? 100));
+
+    content.innerHTML = `
+      <div class="an-section-title" style="margin-top:0;">${currentPeriodLabel()}</div>
+      <div class="an-section-title">${t('ruleBreakdownTitle')}</div>
+      <div class="an-rule-list">
+        ${ruleRows.length ? ruleRows.map(r => `
+          <div class="an-rule-row">
+            <span class="an-rule-name">${ruleLabel(r.rule)}</span>
+            <div class="an-bar-track"><div class="an-bar-fill" data-rule="${r.rule}" style="width:${r.avg ?? 0}%"></div></div>
+            <span class="an-rule-score">${r.avg ?? '–'}${t('scoreUnit')}</span>
+          </div>
+        `).join('') : `<div class="an-day-hint">${t('noRuleData')}</div>`}
+      </div>
+      <div class="an-section-title">${t('sentenceListTitle')}</div>
       <div class="an-day-list">
-        ${dayHist.map(h => `
+        ${periodHist.slice().sort((a, b) => a.ts - b.ts).map(h => `
           <div class="an-day-row">
-            <span class="an-day-time">${new Date(h.ts).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</span>
+            <span class="an-day-time">${new Date(h.ts).toLocaleString(locale, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
             <span class="an-day-sentence">${h.sentence}</span>
             <span class="an-day-score">${h.overall.PronScore ?? '–'}${t('scoreUnit')}</span>
           </div>
         `).join('')}
       </div>
     `;
+    document.getElementById('periodDetailModal').style.display = 'flex';
   }
+  document.getElementById('periodDetailCloseBtn').addEventListener('click', () => {
+    document.getElementById('periodDetailModal').style.display = 'none';
+  });
 
   // ================= 모드 탭 전환 =================
   const VIEW_IDS = { home: 'homeView', sentence: 'sentenceView', custom: 'customView', choice: 'choiceView', conversation: 'conversationView', analytics: 'analyticsView' };
