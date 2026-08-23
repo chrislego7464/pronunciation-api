@@ -77,4 +77,21 @@ async function saveHistoryRecord({ userId, mode, sentence, category, lang, overa
   return { audioPath };
 }
 
-module.exports = { saveHistoryRecord };
+/**
+ * 특정 계정(userId)의 전체 학습 기록을 시간순으로 가져온다.
+ * 주의: 지금은 요청자가 진짜 그 userId의 주인인지 서버가 별도로 검증하지 않는다
+ * (Supabase 세션 토큰 검증 없이 query param만 신뢰). 소규모 파일럿에서는
+ * 위험이 낮지만, 더 넓게 배포하기 전에는 인증 토큰 검증을 추가하는 걸 권장한다.
+ */
+async function fetchHistoryForUser(userId) {
+  const client = getClient();
+  const { data, error } = await client
+    .from('diagnosis_history')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error('기록 조회 실패: ' + error.message);
+  return data;
+}
+
+module.exports = { saveHistoryRecord, fetchHistoryForUser };

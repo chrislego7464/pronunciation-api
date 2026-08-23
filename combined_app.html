@@ -110,6 +110,22 @@ body { margin: 0; background: #171b24; }
 .consent-box .sd-input-editable { border-radius: 999px; padding: 13px 20px; }
 .consent-box .sd-btn { border-radius: 999px; }
 .consent-box .auth-tab { border-radius: 999px; }
+
+.auth-password-wrap { position: relative; }
+.auth-password-wrap .sd-input-editable { padding-right: 46px; }
+.auth-eye-btn {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; font-size: 16px; cursor: pointer;
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  color: #565d6b; opacity: 0.7;
+}
+.auth-eye-btn:hover { opacity: 1; }
+.auth-eye-btn.showing { opacity: 1; }
+.auth-eye-btn::after {
+  content: ''; position: absolute; left: 6px; right: 6px; top: 50%; height: 2px;
+  background: currentColor; border-radius: 1px; transform: translateY(-50%) rotate(-45deg);
+}
+.auth-eye-btn.showing::after { content: none; }
 .auth-guest-link {
   display: block; width: 100%; text-align: center; background: none; border: none;
   color: var(--text-dim); font-size: 13px; font-family: var(--sans); cursor: pointer;
@@ -363,7 +379,18 @@ body { margin: 0; background: #171b24; }
     <span class="auth-field-label" data-i18n="authEmailPlaceholder"></span>
     <input class="sd-input-editable" id="authEmail" type="email" style="width:100%; margin-bottom:14px;">
     <span class="auth-field-label" data-i18n="authPasswordPlaceholder"></span>
-    <input class="sd-input-editable" id="authPassword" type="password" style="width:100%; margin-bottom:14px;">
+    <div class="auth-password-wrap">
+      <input class="sd-input-editable" id="authPassword" type="password" style="width:100%;">
+      <button type="button" class="auth-eye-btn" id="authPasswordEye">👁</button>
+    </div>
+    <div id="authPasswordConfirmWrap" style="display:none; margin-top:14px;">
+      <span class="auth-field-label" data-i18n="authPasswordConfirmPlaceholder"></span>
+      <div class="auth-password-wrap">
+        <input class="sd-input-editable" id="authPasswordConfirm" type="password" style="width:100%;">
+        <button type="button" class="auth-eye-btn" id="authPasswordConfirmEye">👁</button>
+      </div>
+    </div>
+    <div style="margin-top:14px;"></div>
     <label class="auth-remember">
       <input type="checkbox" id="authRememberMe" checked class="auth-checkbox-native">
       <span class="auth-checkbox-box"></span>
@@ -664,6 +691,9 @@ body { margin: 0; background: #171b24; }
     },
     authEmailPlaceholder: { ko: '이메일', ja: 'メールアドレス' },
     authPasswordPlaceholder: { ko: '비밀번호 (6자 이상)', ja: 'パスワード（6文字以上）' },
+    authPasswordConfirmPlaceholder: { ko: '비밀번호 확인', ja: 'パスワード（確認）' },
+    passwordMismatch: { ko: '비밀번호가 서로 일치하지 않아요.', ja: 'パスワードが一致しません。' },
+    signupSuccessMsg: { ko: '가입 완료! 이제 로그인해주세요.', ja: '登録完了！ログインしてください。' },
     rememberMe: { ko: '로그인 상태 유지', ja: 'ログイン状態を保持する' },
     continueAsGuest: { ko: '게스트로 계속하기 (기록 저장 안 됨)', ja: 'ゲストとして続ける（記録は保存されません）' },
     guestStatus: { ko: '게스트로 이용 중 (기록 저장 안 됨)', ja: 'ゲストとして利用中（記録は保存されません）' },
@@ -674,6 +704,8 @@ body { margin: 0; background: #171b24; }
     supabaseKeyLabel: { ko: 'Supabase Anon Key', ja: 'Supabase Anon Key' },
     supabaseNotConfigured: { ko: '⚙️ 설정에서 Supabase URL/Key를 먼저 입력해주세요.', ja: '⚙️ 設定でSupabase URL/Keyを先に入力してください。' },
     noHistoryYetGuest: { ko: '게스트 모드예요 — 로그인하면 학습 기록이 쌓이기 시작해요.', ja: 'ゲストモードです — ログインすると学習記録が溜まり始めます。' },
+    loadingHistory: { ko: '기록을 불러오는 중...', ja: '記録を読み込み中...' },
+    historyLoadFailed: { ko: '기록을 불러오지 못했어요. 백엔드/Supabase 설정을 확인해주세요.', ja: '記録を読み込めませんでした。バックエンド/Supabaseの設定を確認してください。' },
     totalPractice: { ko: '총 연습 횟수', ja: '総練習回数' },
     avgScore: { ko: '평균 점수', ja: '平均点' },
     resetHistory: { ko: '기록 초기화', ja: '記録をリセット' },
@@ -822,6 +854,7 @@ body { margin: 0; background: #171b24; }
     document.getElementById('authTabSignup').classList.toggle('active', mode === 'signup');
     document.getElementById('authConsentNote').style.display = mode === 'signup' ? 'block' : 'none';
     document.querySelector('.auth-remember').style.display = mode === 'signup' ? 'none' : 'flex';
+    document.getElementById('authPasswordConfirmWrap').style.display = mode === 'signup' ? 'block' : 'none';
     document.getElementById('authSubmitBtn').textContent = t(mode === 'login' ? 'authTabLogin' : 'authTabSignup');
     document.getElementById('authError').style.display = 'none';
   }
@@ -829,12 +862,32 @@ body { margin: 0; background: #171b24; }
   document.getElementById('authTabSignup').addEventListener('click', () => setAuthMode('signup'));
   document.getElementById('authGuestBtn').addEventListener('click', closeAuthModal);
 
+  function wireEyeToggle(btnId, inputId){
+    const btn = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    btn.addEventListener('click', () => {
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.classList.toggle('showing', !showing);
+    });
+  }
+  wireEyeToggle('authPasswordEye', 'authPassword');
+  wireEyeToggle('authPasswordConfirmEye', 'authPasswordConfirm');
+
   document.getElementById('authSubmitBtn').addEventListener('click', async () => {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
+    const passwordConfirm = document.getElementById('authPasswordConfirm').value;
     const remember = authMode === 'signup' ? true : document.getElementById('authRememberMe').checked;
     const errorEl = document.getElementById('authError');
     errorEl.style.display = 'none';
+    errorEl.style.color = 'var(--coral)';
+
+    if (authMode === 'signup' && password !== passwordConfirm) {
+      errorEl.textContent = t('passwordMismatch');
+      errorEl.style.display = 'block';
+      return;
+    }
 
     const client = getAuthClient();
     if (!client) {
@@ -846,9 +899,20 @@ body { margin: 0; background: #171b24; }
     localStorage.setItem('remember_me_pref', remember ? 'yes' : 'no');
 
     try {
-      const { data, error } = authMode === 'login'
-        ? await client.auth.signInWithPassword({ email, password })
-        : await client.auth.signUp({ email, password });
+      if (authMode === 'signup') {
+        const { error } = await client.auth.signUp({ email, password });
+        if (error) throw error;
+        await client.auth.signOut(); // 가입 후 자동 로그인 대신, 따로 로그인하도록
+        currentSession = null;
+        document.getElementById('authPassword').value = '';
+        document.getElementById('authPasswordConfirm').value = '';
+        setAuthMode('login');
+        errorEl.style.color = 'var(--teal)';
+        errorEl.textContent = t('signupSuccessMsg');
+        errorEl.style.display = 'block';
+        return;
+      }
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) throw error;
       currentSession = data.session;
       updateAccountUI();
@@ -886,11 +950,30 @@ body { margin: 0; background: #171b24; }
       .catch(err => console.error('중앙 기록 업로드 실패(로컬 기록은 정상 저장됨):', err));
   }
 
-  function renderAnalytics(){
-    const hist = loadHistory();
+  async function renderAnalytics(){
     const wrap = document.getElementById('analyticsWrap');
+    if (!isLoggedIn()) {
+      wrap.innerHTML = `<div class="an-empty">${t('noHistoryYetGuest')}</div>`;
+      return;
+    }
+    wrap.innerHTML = `<div class="an-empty">${t('loadingHistory')}</div>`;
+    const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+    let hist = [];
+    try {
+      const res = await fetch(`${backendUrl}/api/history?userId=${encodeURIComponent(currentUserId())}`);
+      if (!res.ok) throw new Error('load failed: ' + res.status);
+      const data = await res.json();
+      hist = (data.records || []).map(r => ({
+        ts: new Date(r.created_at).getTime(), mode: r.mode, sentence: r.sentence, category: r.category,
+        overall: r.overall || {}, ruleHits: r.rule_hits || [],
+      }));
+    } catch (err) {
+      console.error('학습 기록 불러오기 실패:', err);
+      wrap.innerHTML = `<div class="an-empty">${t('historyLoadFailed')}</div>`;
+      return;
+    }
     if (hist.length === 0){
-      wrap.innerHTML = `<div class="an-empty">${isLoggedIn() ? t('noHistoryYet') : t('noHistoryYetGuest')}</div>`;
+      wrap.innerHTML = `<div class="an-empty">${t('noHistoryYet')}</div>`;
       return;
     }
     const totalCount = hist.length;
@@ -934,11 +1017,7 @@ body { margin: 0; background: #171b24; }
           </div>
         `).join('')}
       </div>
-      <button class="sd-btn secondary" id="resetHistoryBtn">${t('resetHistory')}</button>
     `;
-    document.getElementById('resetHistoryBtn').addEventListener('click', () => {
-      if (confirm(t('resetConfirm'))) { localStorage.removeItem(HISTORY_KEY); renderAnalytics(); }
-    });
   }
 
   // ================= 모드 탭 전환 =================

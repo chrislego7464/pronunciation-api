@@ -8,7 +8,7 @@ const { assessPronunciationFromFile, annotateWithPhonology } = require('./azureP
 const { assessPronunciationETRI } = require('./etriPronunciationAssessment');
 const { synthesizeSpeech } = require('./azureTextToSpeech');
 const { translateText } = require('./azureTranslate');
-const { saveHistoryRecord } = require('./historyStore');
+const { saveHistoryRecord, fetchHistoryForUser } = require('./historyStore');
 const { applyRules } = require('./koreanPhonology');
 
 const app = express();
@@ -114,6 +114,23 @@ app.post('/api/history', upload.single('audio'), async (req, res) => {
     res.status(500).json({ error: String((err && err.message) || err) });
   } finally {
     if (req.file) fs.unlink(req.file.path, () => {});
+  }
+});
+
+/**
+ * GET /api/history?userId=xxx
+ * -> 해당 계정의 학습 기록 전체(시간순)를 반환한다. 로그인된 계정 기준으로
+ *    기기와 무관하게 항상 같은 기록을 볼 수 있게 하기 위한 용도.
+ */
+app.get('/api/history', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ error: 'userId가 필요합니다.' });
+  try {
+    const records = await fetchHistoryForUser(userId);
+    res.json({ records });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: String((err && err.message) || err) });
   }
 });
 
