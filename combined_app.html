@@ -356,6 +356,9 @@ body { margin: 0; background: #171b24; }
 
 .cv-detail-toggle { display: inline-block; margin-top: 8px; font-family: var(--mono); font-size: 11px; color: var(--gold); cursor: pointer; border-bottom: 1px dotted var(--gold); }
 .cv-detail-panel { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.cv-target-preview { font-size: 15px; margin: 0 0 8px; }
+.cv-target-preview .orig { font-size: 12px; }
+.cv-rule-tags { margin-bottom: 10px; }
 .cv-stat-row { display: flex; gap: 6px; margin-bottom: 10px; }
 .cv-stat { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 4px; text-align: center; }
 .cv-stat .num { font-family: var(--serif); font-size: 16px; color: var(--gold); }
@@ -416,27 +419,11 @@ body { margin: 0; background: #171b24; }
       <button class="lang-btn" id="langJa">日本語</button>
       <button class="lang-btn" id="langKo">한국어</button>
     </div>
-    <button class="settings-toggle" id="settingsToggleBtn" title="설정">⚙️</button>
   </div>
 
   <div class="account-bar" id="accountBar">
     <span id="accountStatus"></span>
     <button class="sd-btn secondary" id="accountActionBtn"></button>
-  </div>
-
-  <div id="settingsPanel" style="display:none">
-    <div class="backend-row">
-      <span data-i18n="backendLabel"></span>
-      <input id="backendUrl" value="https://pronunciation-api-is3w.onrender.com" />
-    </div>
-    <div class="backend-row">
-      <span data-i18n="supabaseUrlLabel"></span>
-      <input id="supabaseUrlInput" value="https://pqwduihddfaheskibvwp.supabase.co" placeholder="https://xxxx.supabase.co" />
-    </div>
-    <div class="backend-row">
-      <span data-i18n="supabaseKeyLabel"></span>
-      <input id="supabaseAnonKeyInput" value="sb_publishable_NVjGmz1a6t_VoIsG2FJhqw_PPK8vaPy" placeholder="anon public key" />
-    </div>
   </div>
 
   <button class="back-btn" id="backBtn" style="display:none">← <span data-i18n="backBtnLabel"></span></button>
@@ -575,6 +562,10 @@ body { margin: 0; background: #171b24; }
 
 <script>
 (function(){
+  // 개발/디버그 전용 설정값 — 일반 사용자에게는 노출하지 않는다.
+  const BACKEND_URL = 'https://pronunciation-api-is3w.onrender.com';
+  const SUPABASE_URL = 'https://pqwduihddfaheskibvwp.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_NVjGmz1a6t_VoIsG2FJhqw_PPK8vaPy';
   // ================= 규칙 엔진 (검증된 로직, 양쪽 뷰 공유) =================
   const BASE = 0xAC00;
   const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
@@ -606,6 +597,7 @@ body { margin: 0; background: #171b24; }
         continue;
       }
       if (cur.jong === 'ㅎ' && ASPIRATE[next.cho]){ next.cho = ASPIRATE[next.cho]; cur.jong = ''; notes.push({pos:i, rule:'격음화'}); continue; }
+      if ((cur.jong === 'ㄶ' || cur.jong === 'ㅀ') && ASPIRATE[next.cho]){ next.cho = ASPIRATE[next.cho]; cur.jong = (cur.jong === 'ㄶ') ? 'ㄴ' : 'ㄹ'; notes.push({pos:i, rule:'격음화'}); continue; }
       { const neu0 = NEUTRALIZE[cur.jong]; if (next.cho === 'ㅎ' && ASPIRATE[neu0]){ next.cho = ASPIRATE[neu0]; cur.jong = ''; notes.push({pos:i, rule:'격음화'}); continue; } }
       const neu = NEUTRALIZE[cur.jong];
       if (neu === 'ㄴ' && next.cho === 'ㄹ'){ cur.jong = 'ㄹ'; notes.push({pos:i, rule:'유음화'}); continue; }
@@ -774,7 +766,7 @@ body { margin: 0; background: #171b24; }
     if (triggerEl) triggerEl.style.opacity = '0.5';
     try {
       if (ttsCache.has(sentence)) { await new Audio(ttsCache.get(sentence)).play(); return; }
-      const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+      const backendUrl = BACKEND_URL;
       const res = await fetch(`${backendUrl}/api/pronunciation/tts`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sentence }),
       });
@@ -816,8 +808,8 @@ body { margin: 0; background: #171b24; }
 
   function getAuthClient(){
     if (supabaseAuthClient) return supabaseAuthClient;
-    const url = document.getElementById('supabaseUrlInput').value.trim();
-    const key = document.getElementById('supabaseAnonKeyInput').value.trim();
+    const url = SUPABASE_URL;
+    const key = SUPABASE_ANON_KEY;
     if (!url || !key) return null;
     const dynamicStorage = {
       getItem: (k) => (useLocalStorageForSession ? localStorage : sessionStorage).getItem(k),
@@ -952,7 +944,7 @@ body { margin: 0; background: #171b24; }
       overall: data.overall || {}, ruleHits,
     });
 
-    const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+    const backendUrl = BACKEND_URL;
     const form = new FormData();
     if (audioBlob) form.append('audio', audioBlob, 'attempt.wav');
     form.append('userId', currentUserId());
@@ -973,7 +965,7 @@ body { margin: 0; background: #171b24; }
       return;
     }
     wrap.innerHTML = `<div class="an-empty">${t('loadingHistory')}</div>`;
-    const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+    const backendUrl = BACKEND_URL;
     let hist = [];
     try {
       const res = await fetch(`${backendUrl}/api/history?userId=${encodeURIComponent(currentUserId())}`);
@@ -1064,13 +1056,6 @@ body { margin: 0; background: #171b24; }
   document.getElementById('homeAnalyticsBtn').addEventListener('click', () => setMode('analytics'));
   document.getElementById('backBtn').addEventListener('click', () => setMode('home'));
 
-  document.getElementById('settingsToggleBtn').addEventListener('click', () => {
-    const panel = document.getElementById('settingsPanel');
-    const isOpen = panel.style.display !== 'none';
-    panel.style.display = isOpen ? 'none' : 'block';
-    document.getElementById('settingsToggleBtn').classList.toggle('active', !isOpen);
-  });
-
   // ================================================================
   // ===================== ① 문장 연습 뷰 ===========================
   // ================================================================
@@ -1094,7 +1079,7 @@ body { margin: 0; background: #171b24; }
       '잠이 안 와요.', '꿈이 있어요.', '봄이 왔어요.', '앞으로 잘 부탁해요.', '뒤에 있어요.'],
     '격음화': ['어떻게 지내요?', '좋고 나빠요.', '그렇지 않아요.', '축하해요!', '정말 따뜻해요.',
       '그렇게 하지 마세요.', '좋지 않아요.', '넣지 마세요.', '급하게 왔어요.', '따뜻한 물 주세요.', '깨끗하게 청소했어요.', '섭섭하지 않아요.', '넉넉하게 준비했어요.',
-      '어떻지 않아요.', '못하지 않아요.', '그렇다면 좋아요.', '축하해 주세요.', '잘하지 못해요.', '못하겠어요.',
+      '괜찮지 않아요?', '못하지 않아요.', '그렇다면 좋아요.', '축하해 주세요.', '잘하지 못해요.', '못하겠어요.',
       '생각하지 마세요.', '저는 요리를 못해요.', '방이 깨끗해요.', '교실이 복잡해요.', '정직하게 사세요.', '따뜻해서 좋아요.'],
     '유음화': ['편리해요.', '관리비가 비싸요.', '실내에서 놀아요.', '설날에 뭐 해요?',
       '실내화를 신어요.', '진리를 배워요.', '한류가 유행이에요.', '연락처를 알려주세요.', '난로가 따뜻해요.', '달나라 이야기예요.', '천리 길도 한 걸음부터예요.', '원래 그래요.',
@@ -1111,9 +1096,9 @@ body { margin: 0; background: #171b24; }
       '오빠가 와요.', '동생이 웃어요.', '날씨가 추워요.', '기분이 나빠요.', '취미가 뭐예요?', '나이가 어떻게 되세요?', '주말이 기다려져요.', '방학이 끝났어요.', '여기가 어디예요?', '저기가 학교예요.', '이것이 뭐예요?', '요즘이 제일 바빠요.', '내일이 시험이에요.', '아침이 밝았어요.', '학교가 멀어요.'],
     "평음·경음·격음 구분": ['방에 불을 켜요.', '이건 뿔이에요.', '풀을 먹어요.', '자다가 깼어요.', '값이 짜요.', '차를 마셔요.', '달이 밝아요.', '땅을 파요.', '탈을 써요.', '개가 짖어요.', '까만 옷이에요.', '카드를 주세요.',
       '고기를 먹어요.', '꼬리가 길어요.', '코가 아파요.', '다리가 아파요.', '따로 가요.', '타는 냄새가 나요.', '반이 바뀌었어요.', '빤히 쳐다봐요.', '판을 벌려요.', '살이 쪘어요.', '쌀을 씻어요.', '가방이 커요.', '까치가 울어요.'],
-    '받침 대표음': ['이 옷 예뻐요.', '낮에 만나요.', '꽃 좀 주세요.', '부엌 청소를 해요.', '밖에 나가요.', '숲 속으로 가요.', '빛이 밝아요.', '끝까지 가요.', '옛날 이야기예요.',
-      '옷 색깔이 예뻐요.', '젖 먹던 힘까지 냈어요.', '숯불에 구워요.', '무릎 꿇지 마세요.', '잎 하나가 떨어졌어요.', '앞 좀 보세요.', '밑 빠진 독이에요.', '흙 묻었어요.',
-      '옆 사람이에요.', '무엇 하세요?', '겉 모습만 보지 마세요.', '팥 넣어 주세요.', '몇 개 있어요?', '몇 살이에요?', '집에서 닭 키워요.', '값 좀 깎아 주세요.'],
+    '받침 대표음': ['이 옷 예뻐요.', '낮 열두 시에 만나요.', '꽃 좀 주세요.', '부엌 청소를 해요.', '밖 날씨가 추워요.', '숲 속으로 가요.', '빛 좀 꺼 주세요.', '끝까지 가요.', '옛 모습 그대로예요.',
+      '옷 색깔이 예뻐요.', '젖 먹던 힘까지 냈어요.', '숯 냄새가 나요.', '무릎 꿇지 마세요.', '잎 하나가 떨어졌어요.', '앞 좀 보세요.', '밑 빠진 독이에요.', '흙 묻었어요.',
+      '옆 사람이에요.', '무엇 하세요?', '겉 모습만 보지 마세요.', '팥 넣어 주세요.', '몇 개 있어요?', '몇 살이에요?', '저는 닭 요리를 좋아해요.', '값 좀 깎아 주세요.'],
   };
   const chipWrap = document.getElementById('exampleChips');
   const categoryOpenState = {}; // 기본: 전부 접힘
@@ -1209,7 +1194,7 @@ body { margin: 0; background: #171b24; }
   document.getElementById('jaTranslateBtn').addEventListener('click', async () => {
     const jaText = document.getElementById('jaInput').value.trim();
     if (!jaText) return;
-    const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+    const backendUrl = BACKEND_URL;
     const btn = document.getElementById('jaTranslateBtn');
     btn.disabled = true;
     try {
@@ -1339,7 +1324,7 @@ body { margin: 0; background: #171b24; }
 
   diagnoseBtn.addEventListener('click', async () => {
     const sentence = document.getElementById('sentenceInput').value.trim();
-    const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+    const backendUrl = BACKEND_URL;
     const resultWrap = document.getElementById('resultWrap');
     if (!spRecordedWavBlob || !sentence) return;
     resultWrap.innerHTML = `<div class="sd-loading">${t('diagnosing')}</div>`;
@@ -1420,7 +1405,7 @@ body { margin: 0; background: #171b24; }
 
   customDiagnoseBtn.addEventListener('click', async () => {
     const sentence = document.getElementById('customInput').value.trim();
-    const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+    const backendUrl = BACKEND_URL;
     const resultWrap = document.getElementById('customResultWrap');
     if (!cuRecordedWavBlob || !sentence) return;
     resultWrap.innerHTML = `<div class="sd-loading">${t('diagnosing')}</div>`;
@@ -1636,7 +1621,7 @@ body { margin: 0; background: #171b24; }
       diagnoseBtn.disabled = true;
       diagnoseBtn.textContent = t('diagnosing');
       try {
-        const backendUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
+        const backendUrl = BACKEND_URL;
         const form = new FormData();
         form.append('audio', recordedWavBlob, 'attempt.wav');
         form.append('sentence', sentence);
@@ -1693,10 +1678,17 @@ body { margin: 0; background: #171b24; }
       <audio controls src="${recordedUrl}" style="width:100%; height:30px; margin-top:2px;"></audio>
       <div class="cv-detail-toggle">${t('detailShow')} ▾</div>
       <div class="cv-detail-panel" style="display:none">
+        <div class="sd-target-preview cv-target-preview"></div>
+        <div class="sd-rule-tags cv-rule-tags"></div>
         <div class="cv-stat-row">${statHtml}</div>
         <div class="cv-word-list">${wordsHtml}</div>
       </div>
     `;
+
+    renderTargetPreview(sentence, {
+      preview: bubbleEl.querySelector('.cv-target-preview'),
+      tagWrap: bubbleEl.querySelector('.cv-rule-tags'),
+    });
 
     bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(sentence, e.currentTarget));
     const toggle = bubbleEl.querySelector('.cv-detail-toggle');
