@@ -646,9 +646,7 @@ body { margin: 0; background: #171b24; }
   <!-- ===== 회화 연습 ===== -->
   <div id="conversationView" style="display:none">
     <div id="scenarioPickerScreen">
-      <div class="an-section-title" data-i18n="starterTitle" style="margin-top:0;"></div>
-      <div class="cv-scenario-row" id="scenarioRow"></div>
-      <div class="an-section-title" data-i18n="durationTitle"></div>
+      <div class="an-section-title" data-i18n="durationTitle" style="margin-top:0;"></div>
       <div class="cv-scenario-row" id="durationRow"></div>
       <button class="sd-btn" id="startConversationBtn" disabled style="width:100%; margin-top:10px;" data-i18n="startConversationBtn"></button>
     </div>
@@ -734,7 +732,7 @@ body { margin: 0; background: #171b24; }
     appSub: { ko: '문장 연습과 회화 연습을 한 곳에서.', ja: '文の練習と会話の練習をひとつの画面で。' },
     backendLabel: { ko: '백엔드 주소', ja: 'バックエンドのアドレス' },
     modeSentence: { ko: '문장 연습', ja: '文の練習' },
-    modeConversation: { ko: '회화 연습', ja: '会話練習' },
+    modeConversation: { ko: 'AI와 회화 연습', ja: 'AIとの会話練習' },
 
     card1Title: { ko: '① 문장 고르기', ja: '① 文を選ぶ' },
     card2TitleListen: { ko: '② 발음 듣기', ja: '② 発音を聞く' },
@@ -771,12 +769,8 @@ body { margin: 0; background: #171b24; }
     yourTurn: { ko: '당신 차례예요. 위 문장을 읽고 녹음하세요.', ja: 'あなたの番です。上の文を読んで録音してください。' },
     freeAnswerHint: { ko: '자유롭게 대답을 녹음해보세요.', ja: '自由に答えを録音してみましょう。' },
     durationTitle: { ko: '대화 시간을 골라주세요', ja: '会話時間を選んでください' },
-    starterTitle: { ko: '누가 먼저 말을 걸까요?', ja: 'どちらが先に話しますか？' },
-    starterAi: { ko: 'AI가 먼저', ja: 'AIから' },
-    starterUser: { ko: '내가 먼저', ja: '自分から' },
     startConversationBtn: { ko: '대화 시작하기', ja: '会話を始める' },
     minUnit: { ko: '분', ja: '分' },
-    aiThinking: { ko: 'AI가 대화를 준비하는 중...', ja: 'AIが会話を準備しています...' },
     submitTurnBtn: { ko: '전송하기', ja: '送信する' },
     submitting: { ko: '전송 중...', ja: '送信中...' },
     sessionEnded: { ko: '⏱️ 시간이 종료됐어요!', ja: '⏱️ 時間が終了しました！' },
@@ -924,8 +918,7 @@ body { margin: 0; background: #171b24; }
       ttsCache.set(sentence, url);
       await new Audio(url).play();
     } catch (err) {
-      console.error(err);
-      alert(t('ttsFailed') + '\n\n' + err.message);
+      console.error('TTS 재생 실패:', err);
     } finally {
       if (triggerEl) triggerEl.style.opacity = '1';
     }
@@ -1844,11 +1837,9 @@ body { margin: 0; background: #171b24; }
   // ============== ② 회화 연습 뷰 (AI와 진짜 쌍방향 대화) =============
   // ================================================================
   const CONV_DURATIONS = [60, 120, 180]; // 초 단위 (1/2/3분)
-  const GENERIC_TOPIC = '자유로운 일상 대화';
+  const FIXED_OPENING = '안녕하세요! 저와 무슨 이야기를 하고 싶으세요? 뭐든 말씀해주세요!';
   const FALLBACK_NEXT_LINE = '그렇군요! 조금 더 이야기해 줄래요?';
-  const FALLBACK_OPENING = '안녕하세요! 오늘 기분이 어때요?';
 
-  let conversationStarter = 'ai'; // 'ai' | 'user'
   let selectedDurationSec = null;
   let sessionActive = false;
   let activeMediaStream = null; // 미리 켜둔 마이크 스트림 — 세션이 갑자기 끝나도 확실히 꺼주기 위해 추적
@@ -1860,19 +1851,7 @@ body { margin: 0; background: #171b24; }
 
   const cvThread = document.getElementById('thread');
   const actionWrap = document.getElementById('actionWrap');
-  const scenarioRow = document.getElementById('scenarioRow');
   const durationRow = document.getElementById('durationRow');
-
-  function renderScenarios(){
-    scenarioRow.innerHTML = '';
-    [['ai', '🤖', 'starterAi'], ['user', '🙋', 'starterUser']].forEach(([key, icon, labelKey]) => {
-      const chip = document.createElement('div');
-      chip.className = 'cv-scenario-chip' + (key === conversationStarter ? ' active' : '');
-      chip.innerHTML = `<div class="icon">${icon}</div><div class="name">${t(labelKey)}</div>`;
-      chip.addEventListener('click', () => { conversationStarter = key; renderScenarios(); });
-      scenarioRow.appendChild(chip);
-    });
-  }
 
   function renderDurations(){
     durationRow.innerHTML = '';
@@ -1897,7 +1876,7 @@ body { margin: 0; background: #171b24; }
     document.getElementById('scenarioPickerScreen').style.display = 'block';
     document.getElementById('cvTimer').style.display = 'none';
     selectedDurationSec = null;
-    renderScenarios(); renderDurations(); updateStartButton();
+    renderDurations(); updateStartButton();
   }
   document.getElementById('cvBackToPickerBtn').addEventListener('click', backToScenarioPicker);
 
@@ -1906,7 +1885,7 @@ body { margin: 0; background: #171b24; }
   function pauseTimer(){ timerPaused = true; }
   function resumeTimer(){ timerPaused = false; }
 
-  async function startConversationSession(){
+  function startConversationSession(){
     sessionActive = true;
     sessionHistory = [];
     sessionTurns = [];
@@ -1915,7 +1894,7 @@ body { margin: 0; background: #171b24; }
     document.getElementById('conversationChatScreen').style.display = 'block';
 
     remainingMs = selectedDurationSec * 1000;
-    timerPaused = true; // AI 응답을 기다리는 동안은 멈춰있는 상태로 시작
+    timerPaused = true; // AI 대사가 뜨는 순간 renderAiLine 안에서 다시 흐르기 시작함
     const timerEl = document.getElementById('cvTimer');
     timerEl.style.display = 'block';
     updateTimerDisplay();
@@ -1926,24 +1905,7 @@ body { margin: 0; background: #171b24; }
       if (sessionActive && remainingMs <= 0) endConversationSession();
     }, 1000);
 
-    if (conversationStarter === 'user') {
-      resumeTimer(); // 사용자가 먼저 시작하면 기다릴 AI가 없으니 바로 시간이 흐름
-      renderRecordWidget();
-      return;
-    }
-
-    actionWrap.innerHTML = `<div class="cv-loading">${t('aiThinking')}</div>`;
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/conversation/opening`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: GENERIC_TOPIC, lang }),
-      });
-      const data = await res.json();
-      renderAiLine(data.nextLine || FALLBACK_OPENING);
-    } catch (err) {
-      console.error(err);
-      renderAiLine(FALLBACK_OPENING);
-    }
+    renderAiLine(FIXED_OPENING);
   }
 
   function updateTimerDisplay(){
@@ -2210,7 +2172,6 @@ body { margin: 0; background: #171b24; }
     updateCustomRecordStatusText();
 
     // 회화 연습 뷰 갱신 (세션 진행 중엔 굳이 끊지 않고, 선택 화면 라벨만 갱신)
-    renderScenarios();
     renderDurations();
 
     // 학습 기록 뷰 갱신 (이미 불러온 데이터가 있으면 재조회 없이 다시 그리기만)
