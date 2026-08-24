@@ -10,7 +10,7 @@
  * 현재 무료 한도/모델명을 다시 확인할 것.)
  */
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-3.6-flash'; // 2026-08: gemini-2.5-flash가 신규 사용자에게 제공 중단되어 교체함
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 /**
