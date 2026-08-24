@@ -1849,7 +1849,8 @@ body { margin: 0; background: #171b24; }
   let conversationStarter = 'ai'; // 'ai' | 'user'
   let selectedDurationSec = null;
   let sessionActive = false;
-  let sessionEndAt = null;
+  let remainingMs = 0;
+  let timerPaused = true; // AI 응답을 기다리는 동안은 시간이 안 흐르도록
   let sessionTimerInterval = null;
   let sessionHistory = []; // Gemini에 보낼 대화 맥락 [{speaker:'ai'|'user', text}]
   let sessionTurns = [];   // 세션 끝나야 공개할 진단 데이터 (녹음 파일 포함)
@@ -1898,6 +1899,9 @@ body { margin: 0; background: #171b24; }
 
   document.getElementById('startConversationBtn').addEventListener('click', startConversationSession);
 
+  function pauseTimer(){ timerPaused = true; }
+  function resumeTimer(){ timerPaused = false; }
+
   async function startConversationSession(){
     sessionActive = true;
     sessionHistory = [];
@@ -1906,16 +1910,20 @@ body { margin: 0; background: #171b24; }
     document.getElementById('scenarioPickerScreen').style.display = 'none';
     document.getElementById('conversationChatScreen').style.display = 'block';
 
-    sessionEndAt = Date.now() + selectedDurationSec * 1000;
+    remainingMs = selectedDurationSec * 1000;
+    timerPaused = true; // AI 응답을 기다리는 동안은 멈춰있는 상태로 시작
     const timerEl = document.getElementById('cvTimer');
     timerEl.style.display = 'block';
     updateTimerDisplay();
     sessionTimerInterval = setInterval(() => {
+      if (timerPaused) return;
+      remainingMs = Math.max(0, remainingMs - 1000);
       updateTimerDisplay();
-      if (sessionActive && Date.now() >= sessionEndAt) endConversationSession();
+      if (sessionActive && remainingMs <= 0) endConversationSession();
     }, 1000);
 
     if (conversationStarter === 'user') {
+      resumeTimer(); // 사용자가 먼저 시작하면 기다릴 AI가 없으니 바로 시간이 흐름
       renderRecordWidget();
       return;
     }
@@ -1935,7 +1943,7 @@ body { margin: 0; background: #171b24; }
   }
 
   function updateTimerDisplay(){
-    const remain = Math.max(0, Math.round((sessionEndAt - Date.now()) / 1000));
+    const remain = Math.max(0, Math.round(remainingMs / 1000));
     const m = Math.floor(remain / 60), s = remain % 60;
     document.getElementById('cvTimer').textContent = `⏱️ ${m}:${String(s).padStart(2, '0')}`;
   }
@@ -1950,6 +1958,7 @@ body { margin: 0; background: #171b24; }
   }
 
   function renderAiLine(text){
+    resumeTimer(); // AI 대사가 준비된 시점부터 다시 시간이 흐름
     sessionHistory.push({ speaker: 'ai', text });
     const bubbleEl = addBubble('partner', `${text}<br><span class="cv-play">${t('listenBtn')}</span>`);
     bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(text, e.currentTarget));
@@ -2013,6 +2022,7 @@ body { margin: 0; background: #171b24; }
     micBtn.addEventListener('click', () => { recording ? stopRecording() : startRecording(); });
 
     async function submitTurn(wavBlob){
+      pauseTimer(); // 음성 인식 + Gemini 응답을 기다리는 동안은 시간이 안 흐르도록
       try {
         const form = new FormData();
         form.append('audio', wavBlob, 'attempt.wav');
@@ -2051,6 +2061,7 @@ body { margin: 0; background: #171b24; }
         console.error(err);
         recordStatus.textContent = t('ttsFailed');
         micBtn.disabled = false;
+        resumeTimer();
       }
     }
   }
