@@ -378,13 +378,11 @@ body { margin: 0; background: #171b24; }
 
 /* ===== 회화 연습 (cv-*) ===== */
 .cv-scenario-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
-.cv-option-hint { font-size: 12.5px; color: var(--text-faint); margin-bottom: 10px; }
-.cv-option-row { display: flex; flex-direction: column; gap: 8px; }
-.cv-option-chip {
-  text-align: left; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px;
-  padding: 12px 14px; font-family: var(--serif); font-size: 15px; color: var(--text); cursor: pointer;
+.cv-timer {
+  text-align: center; font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--gold);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px; margin-bottom: 16px;
 }
-.cv-option-chip:hover { border-color: var(--gold); }
 .cv-scenario-chip {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
   cursor: pointer; flex: 1; min-width: 160px; text-align: center;
@@ -463,6 +461,13 @@ body { margin: 0; background: #171b24; }
 </head>
 <body>
 
+<div class="consent-overlay" id="conversationResultsModal" style="display:none">
+  <div class="consent-box" style="max-width: 480px;">
+    <button class="auth-close-btn" id="conversationResultsCloseBtn" aria-label="close">✕</button>
+    <div id="conversationResultsContent"></div>
+  </div>
+</div>
+
 <div class="consent-overlay" id="periodDetailModal" style="display:none">
   <div class="consent-box" style="max-width: 480px;">
     <button class="auth-close-btn" id="periodDetailCloseBtn" aria-label="close">✕</button>
@@ -535,11 +540,7 @@ body { margin: 0; background: #171b24; }
         <div class="home-icon">✏️</div>
         <div class="home-label" data-i18n="modeCustom"></div>
       </div>
-      <div class="home-card" id="homeChoiceBtn">
-        <div class="home-icon">🔀</div>
-        <div class="home-label" data-i18n="modeChoice"></div>
-      </div>
-      <div class="home-card" id="homeConversationBtn">
+            <div class="home-card" id="homeConversationBtn">
         <div class="home-icon">🗨️</div>
         <div class="home-label" data-i18n="modeConversation"></div>
       </div>
@@ -642,25 +643,18 @@ body { margin: 0; background: #171b24; }
     <div class="sd-result" id="customResultWrap"></div>
   </div>
 
-  <!-- ===== 선택형 문장 연습 ===== -->
-  <div id="choiceView" style="display:none">
-    <div id="choicePickerScreen">
-      <div class="cv-scenario-row" id="choiceScenarioRow"></div>
-    </div>
-    <div id="choiceChatScreen" style="display:none">
-      <button class="back-btn" id="choiceBackToPickerBtn">← <span data-i18n="cvBackToPicker"></span></button>
-      <div class="cv-thread" id="choiceThread"></div>
-      <div id="choiceActionWrap"></div>
-    </div>
-  </div>
-
   <!-- ===== 회화 연습 ===== -->
   <div id="conversationView" style="display:none">
     <div id="scenarioPickerScreen">
+      <div class="an-section-title" data-i18n="starterTitle" style="margin-top:0;"></div>
       <div class="cv-scenario-row" id="scenarioRow"></div>
+      <div class="an-section-title" data-i18n="durationTitle"></div>
+      <div class="cv-scenario-row" id="durationRow"></div>
+      <button class="sd-btn" id="startConversationBtn" disabled style="width:100%; margin-top:10px;" data-i18n="startConversationBtn"></button>
     </div>
     <div id="conversationChatScreen" style="display:none">
       <button class="back-btn" id="cvBackToPickerBtn">← <span data-i18n="cvBackToPicker"></span></button>
+      <div class="cv-timer" id="cvTimer" style="display:none"></div>
       <div class="cv-thread" id="thread"></div>
       <div id="actionWrap"></div>
     </div>
@@ -774,8 +768,20 @@ body { margin: 0; background: #171b24; }
     ttsFailed: { ko: '재생/요청 실패', ja: '再生/リクエスト失敗' },
 
     yourTurn: { ko: '당신 차례예요. 위 문장을 읽고 녹음하세요.', ja: 'あなたの番です。上の文を読んで録音してください。' },
-    chooseAnswerHint: { ko: '어울리는 대답을 하나 골라보세요.', ja: '合う答えを一つ選んでください。' },
     freeAnswerHint: { ko: '자유롭게 대답을 녹음해보세요.', ja: '自由に答えを録音してみましょう。' },
+    durationTitle: { ko: '대화 시간을 골라주세요', ja: '会話時間を選んでください' },
+    starterTitle: { ko: '누가 먼저 말을 걸까요?', ja: 'どちらが先に話しますか？' },
+    starterAi: { ko: 'AI가 먼저', ja: 'AIから' },
+    starterUser: { ko: '내가 먼저', ja: '自分から' },
+    startConversationBtn: { ko: '대화 시작하기', ja: '会話を始める' },
+    minUnit: { ko: '분', ja: '分' },
+    aiThinking: { ko: 'AI가 대화를 준비하는 중...', ja: 'AIが会話を準備しています...' },
+    submitTurnBtn: { ko: '전송하기', ja: '送信する' },
+    submitting: { ko: '전송 중...', ja: '送信中...' },
+    sessionEnded: { ko: '⏱️ 시간이 종료됐어요!', ja: '⏱️ 時間が終了しました！' },
+    viewResultsBtn: { ko: '결과 보기', ja: '結果を見る' },
+    resultsTitle: { ko: '대화 결과', ja: '会話の結果' },
+    perTurnResultsTitle: { ko: '내가 답한 문장들', ja: '自分が答えた文' },
     recognizedLabel: { ko: '인식된 내 대답', ja: '認識された自分の答え' },
     notRecognized: { ko: '(음성을 인식하지 못했어요)', ja: '（音声を認識できませんでした）' },
     validAnswerLabel: { ko: '✅ 타당한 대답이에요', ja: '✅ 適切な答えです' },
@@ -787,7 +793,6 @@ body { margin: 0; background: #171b24; }
 
     modeAnalytics: { ko: '학습 기록', ja: '学習記録' },
     modeCustom: { ko: '커스텀 문장', ja: 'カスタム文' },
-    modeChoice: { ko: '선택형 문장 연습', ja: '選択式文の練習' },
     backBtnLabel: { ko: '홈으로', ja: 'ホームへ' },
     cvBackToPicker: { ko: '시나리오 선택으로', ja: 'シナリオ選択へ' },
     customTitle: { ko: '✏️ 직접 문장 입력하기', ja: '✏️ 文を直接入力する' },
@@ -838,7 +843,7 @@ body { margin: 0; background: #171b24; }
     calendarTitle: { ko: '달력으로 보기', ja: 'カレンダーで見る' },
     ruleBreakdownTitle: { ko: '음운 규칙별 점수', ja: '音韻ルール別スコア' },
     scopeAll: { ko: '전체', ja: '全体' },
-    scopeSentence: { ko: '낭독형(문장·선택형·커스텀)', ja: '朗読型(文・選択式・カスタム)' },
+    scopeSentence: { ko: '낭독형(문장·커스텀)', ja: '朗読型(文・カスタム)' },
     scopeConversation: { ko: '회화 연습', ja: '会話練習' },
     secUnit: { ko: '초', ja: '秒' },
     avgResponseLatency: { ko: '평균 응답 속도', ja: '平均応答速度' },
@@ -1171,7 +1176,7 @@ body { margin: 0; background: #171b24; }
     const wrap = document.getElementById('analyticsWrap');
     const hist = currentHistData.filter(h => {
       if (analyticsScope === 'all') return true;
-      if (analyticsScope === 'sentence') return h.mode === 'sentence' || h.mode === 'custom' || h.mode === 'choice';
+      if (analyticsScope === 'sentence') return h.mode === 'sentence' || h.mode === 'custom';
       return h.mode === 'conversation';
     });
     filteredHistData = hist;
@@ -1202,7 +1207,7 @@ body { margin: 0; background: #171b24; }
 
     wireScopeTabs(wrap);
     wrap.querySelectorAll('.an-period-tab').forEach(btn => {
-      btn.addEventListener('click', () => { periodType = btn.dataset.period; renderPeriodNav(); renderPeriodSummary(); });
+      btn.addEventListener('click', () => { periodType = btn.dataset.period; renderAnalyticsUI(); });
     });
 
     renderPeriodNav();
@@ -1402,9 +1407,9 @@ body { margin: 0; background: #171b24; }
   });
 
   // ================= 모드 탭 전환 =================
-  const VIEW_IDS = { home: 'homeView', sentence: 'sentenceView', custom: 'customView', choice: 'choiceView', conversation: 'conversationView', analytics: 'analyticsView' };
-  const MODE_ICONS = { sentence: '📝', custom: '✏️', choice: '🔀', conversation: '🗨️', analytics: '📊' };
-  const MODE_STRING_KEYS = { sentence: 'modeSentence', custom: 'modeCustom', choice: 'modeChoice', conversation: 'modeConversation', analytics: 'modeAnalytics' };
+  const VIEW_IDS = { home: 'homeView', sentence: 'sentenceView', custom: 'customView', conversation: 'conversationView', analytics: 'analyticsView' };
+  const MODE_ICONS = { sentence: '📝', custom: '✏️', conversation: '🗨️', analytics: '📊' };
+  const MODE_STRING_KEYS = { sentence: 'modeSentence', custom: 'modeCustom', conversation: 'modeConversation', analytics: 'modeAnalytics' };
   let currentMode = 'home';
 
   function updateSectionTitle(){
@@ -1421,13 +1426,11 @@ body { margin: 0; background: #171b24; }
     });
     document.getElementById('backBtn').style.display = (mode === 'home') ? 'none' : 'inline-flex';
     if (mode === 'conversation') backToScenarioPicker();
-    if (mode === 'choice') backToChoicePicker();
     updateSectionTitle();
     if (mode === 'analytics') renderAnalytics();
   }
   document.getElementById('homeSentenceBtn').addEventListener('click', () => setMode('sentence'));
   document.getElementById('homeCustomBtn').addEventListener('click', () => setMode('custom'));
-  document.getElementById('homeChoiceBtn').addEventListener('click', () => setMode('choice'));
   document.getElementById('homeConversationBtn').addEventListener('click', () => setMode('conversation'));
   document.getElementById('homeAnalyticsBtn').addEventListener('click', () => setMode('analytics'));
   document.getElementById('backBtn').addEventListener('click', () => setMode('home'));
@@ -1836,76 +1839,125 @@ body { margin: 0; background: #171b24; }
   }
 
   // ================================================================
-  // ===================== ② 회화 연습 뷰 (진짜 자유 대화) ============
+  // ============== ② 회화 연습 뷰 (AI와 진짜 쌍방향 대화) =============
   // ================================================================
-  const CONVERSATIONS = {
-    intro: {
-      title: { ko: '자기소개 대화', ja: '自己紹介の会話' },
-      icon: '🙋', color: '#7fa6e0',
-      questions: ['이름이 뭐예요?', '어느 나라에서 왔어요?', '취미가 뭐예요?'],
-    },
-    daily: {
-      title: { ko: '일상 이야기', ja: '日常の話' },
-      icon: '☀️', color: '#e3b158',
-      questions: ['오늘 날씨가 어때요?', '주말에 보통 뭐 해요?', '한국 음식 중에 뭘 좋아해요?'],
-    },
-  };
+  const CONV_DURATIONS = [60, 120, 180]; // 초 단위 (1/2/3분)
+  const GENERIC_TOPIC = '자유로운 일상 대화';
+  const FALLBACK_NEXT_LINE = { ko: '그렇군요! 조금 더 이야기해 줄래요?', ja: 'そうなんですね！もう少し話してくれますか？' };
+  const FALLBACK_OPENING = { ko: '안녕하세요! 오늘 기분이 어때요?', ja: 'こんにちは！今日の気分はどうですか？' };
 
-  let currentScenarioKey = null;
-  let lineIndex = 0;
+  let conversationStarter = 'ai'; // 'ai' | 'user'
+  let selectedDurationSec = null;
+  let sessionActive = false;
+  let sessionEndAt = null;
+  let sessionTimerInterval = null;
+  let sessionHistory = []; // Gemini에 보낼 대화 맥락 [{speaker:'ai'|'user', text}]
+  let sessionTurns = [];   // 세션 끝나야 공개할 진단 데이터 (녹음 파일 포함)
+
   const cvThread = document.getElementById('thread');
   const actionWrap = document.getElementById('actionWrap');
   const scenarioRow = document.getElementById('scenarioRow');
+  const durationRow = document.getElementById('durationRow');
 
   function renderScenarios(){
     scenarioRow.innerHTML = '';
-    Object.entries(CONVERSATIONS).forEach(([key, sc]) => {
+    [['ai', '🤖', 'starterAi'], ['user', '🙋', 'starterUser']].forEach(([key, icon, labelKey]) => {
       const chip = document.createElement('div');
-      chip.className = 'cv-scenario-chip' + (key === currentScenarioKey ? ' active' : '');
-      chip.innerHTML = `<div class="icon">${sc.icon}</div><div class="name">${sc.title[lang]}</div>`;
-      chip.addEventListener('click', () => startScenario(key));
+      chip.className = 'cv-scenario-chip' + (key === conversationStarter ? ' active' : '');
+      chip.innerHTML = `<div class="icon">${icon}</div><div class="name">${t(labelKey)}</div>`;
+      chip.addEventListener('click', () => { conversationStarter = key; renderScenarios(); });
       scenarioRow.appendChild(chip);
     });
   }
 
-  function startScenario(key){
-    currentScenarioKey = key; lineIndex = 0; cvThread.innerHTML = '';
-    document.getElementById('scenarioPickerScreen').style.display = 'none';
-    document.getElementById('conversationChatScreen').style.display = 'block';
-    renderScenarios(); showNextLine();
+  function renderDurations(){
+    durationRow.innerHTML = '';
+    CONV_DURATIONS.forEach(sec => {
+      const chip = document.createElement('div');
+      chip.className = 'cv-scenario-chip' + (sec === selectedDurationSec ? ' active' : '');
+      chip.innerHTML = `<div class="icon">⏱️</div><div class="name">${Math.round(sec / 60)}${t('minUnit')}</div>`;
+      chip.addEventListener('click', () => { selectedDurationSec = sec; renderDurations(); updateStartButton(); });
+      durationRow.appendChild(chip);
+    });
   }
-  function currentScenario(){ return CONVERSATIONS[currentScenarioKey]; }
+
+  function updateStartButton(){
+    document.getElementById('startConversationBtn').disabled = !selectedDurationSec;
+  }
 
   function backToScenarioPicker(){
+    if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+    sessionActive = false;
     document.getElementById('conversationChatScreen').style.display = 'none';
     document.getElementById('scenarioPickerScreen').style.display = 'block';
-    currentScenarioKey = null;
-    renderScenarios();
+    document.getElementById('cvTimer').style.display = 'none';
+    selectedDurationSec = null;
+    renderScenarios(); renderDurations(); updateStartButton();
   }
   document.getElementById('cvBackToPickerBtn').addEventListener('click', backToScenarioPicker);
 
-  function showNextLine(){
-    const sc = currentScenario();
-    if (!sc) return;
-    if (lineIndex >= sc.questions.length){ actionWrap.innerHTML = `<div class="cv-done">${t('done')}</div>`; return; }
-    renderFreeQuestion(sc, sc.questions[lineIndex]);
+  document.getElementById('startConversationBtn').addEventListener('click', startConversationSession);
+
+  async function startConversationSession(){
+    sessionActive = true;
+    sessionHistory = [];
+    sessionTurns = [];
+    cvThread.innerHTML = '';
+    document.getElementById('scenarioPickerScreen').style.display = 'none';
+    document.getElementById('conversationChatScreen').style.display = 'block';
+
+    sessionEndAt = Date.now() + selectedDurationSec * 1000;
+    const timerEl = document.getElementById('cvTimer');
+    timerEl.style.display = 'block';
+    updateTimerDisplay();
+    sessionTimerInterval = setInterval(() => {
+      updateTimerDisplay();
+      if (sessionActive && Date.now() >= sessionEndAt) endConversationSession();
+    }, 1000);
+
+    if (conversationStarter === 'user') {
+      renderRecordWidget();
+      return;
+    }
+
+    actionWrap.innerHTML = `<div class="cv-loading">${t('aiThinking')}</div>`;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/conversation/opening`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: GENERIC_TOPIC, lang }),
+      });
+      const data = await res.json();
+      renderAiLine(data.nextLine || FALLBACK_OPENING[lang]);
+    } catch (err) {
+      console.error(err);
+      renderAiLine(FALLBACK_OPENING[lang]);
+    }
   }
 
-  function addBubble(speaker, html, sc){
+  function updateTimerDisplay(){
+    const remain = Math.max(0, Math.round((sessionEndAt - Date.now()) / 1000));
+    const m = Math.floor(remain / 60), s = remain % 60;
+    document.getElementById('cvTimer').textContent = `⏱️ ${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  function addBubble(speaker, html){
     const row = document.createElement('div');
     row.className = 'cv-row ' + speaker;
-    const avatar = speaker === 'partner'
-      ? `<div class="cv-avatar" style="background:${sc.color}22;border-color:${sc.color}">${sc.icon}</div>`
-      : '';
+    const avatar = speaker === 'partner' ? `<div class="cv-avatar" style="background:#7fa6e022;border-color:#7fa6e0">🤖</div>` : '';
     row.innerHTML = `${avatar}<div class="cv-bubble">${html}</div>`;
     cvThread.appendChild(row);
     return row.querySelector('.cv-bubble');
   }
 
-  function renderFreeQuestion(sc, question){
-    const bubbleEl = addBubble('partner', `${question}<br><span class="cv-play">${t('listenBtn')}</span>`, sc);
-    bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(question, e.currentTarget));
+  function renderAiLine(text){
+    sessionHistory.push({ speaker: 'ai', text });
+    const bubbleEl = addBubble('partner', `${text}<br><span class="cv-play">${t('listenBtn')}</span>`);
+    bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(text, e.currentTarget));
+    playTTS(text);
+    if (sessionActive) renderRecordWidget();
+  }
 
+  function renderRecordWidget(){
     actionWrap.innerHTML = `
       <div class="cv-action">
         <div class="hint">${t('freeAnswerHint')}</div>
@@ -1916,26 +1968,17 @@ body { margin: 0; background: #171b24; }
             <div class="cv-meter"><div class="cv-meter-fill" id="convMeterFill"></div></div>
           </div>
         </div>
-        <div id="convPlaybackWrap" style="display:none; margin-top:10px;">
-          <audio id="convPlaybackAudio" controls style="width:100%; height:32px;"></audio>
-        </div>
-        <div class="cv-btn-row">
-          <button class="cv-btn" id="convDiagnoseBtn" disabled>${t('diagnoseBtn')}</button>
-          <button class="cv-btn secondary" id="convReRecordBtn">${t('reRecordBtn')}</button>
-        </div>
       </div>`;
-
-    setupFreeRecording(sc, question);
+    setupSessionRecording();
   }
 
-  function setupFreeRecording(sc, question){
+  function setupSessionRecording(){
     let audioContext, sourceNode, processorNode, gainNode, mediaStream;
-    let recordedChunks = [], recordedWavBlob = null, recordedUrl = null, recording = false;
+    let recordedChunks = [], recording = false;
 
     const micBtn = document.getElementById('convMicBtn');
     const recordStatus = document.getElementById('convRecordStatus');
     const meterFill = document.getElementById('convMeterFill');
-    const diagnoseBtn = document.getElementById('convDiagnoseBtn');
 
     async function startRecording(){
       try { mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } }); }
@@ -1948,13 +1991,12 @@ body { margin: 0; background: #171b24; }
       processorNode.onaudioprocess = (e) => {
         const input = e.inputBuffer.getChannelData(0);
         recordedChunks.push(new Float32Array(input));
-        let sum = 0; for (let i = 0; i < input.length; i++) sum += input[i]*input[i];
-        meterFill.style.width = Math.min(100, Math.sqrt(sum/input.length)*400) + '%';
+        let sum = 0; for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+        meterFill.style.width = Math.min(100, Math.sqrt(sum / input.length) * 400) + '%';
       };
       sourceNode.connect(processorNode); processorNode.connect(gainNode); gainNode.connect(audioContext.destination);
       recording = true; micBtn.classList.add('recording'); micBtn.textContent = '■';
       recordStatus.textContent = t('recordingNow');
-      diagnoseBtn.disabled = true;
     }
 
     function stopRecording(){
@@ -1962,30 +2004,19 @@ body { margin: 0; background: #171b24; }
       processorNode.disconnect(); sourceNode.disconnect(); gainNode.disconnect();
       mediaStream.getTracks().forEach(tr => tr.stop());
       const sampleRate = audioContext.sampleRate; audioContext.close();
-      recordedWavBlob = encodeWav(recordedChunks, sampleRate);
-      recordedUrl = URL.createObjectURL(recordedWavBlob);
-      const playbackAudio = document.getElementById('convPlaybackAudio');
-      const playbackWrap = document.getElementById('convPlaybackWrap');
-      playbackAudio.src = recordedUrl;
-      playbackWrap.style.display = 'block';
-      recordStatus.textContent = t('recordDone');
-      diagnoseBtn.disabled = false;
+      const wavBlob = encodeWav(recordedChunks, sampleRate);
+      micBtn.disabled = true;
+      recordStatus.textContent = t('submitting');
+      submitTurn(wavBlob);
     }
 
     micBtn.addEventListener('click', () => { recording ? stopRecording() : startRecording(); });
-    document.getElementById('convReRecordBtn').addEventListener('click', () => {
-      recordedWavBlob = null; diagnoseBtn.disabled = true; recordStatus.textContent = t('recordIdle');
-      document.getElementById('convPlaybackWrap').style.display = 'none';
-    });
 
-    diagnoseBtn.addEventListener('click', async () => {
-      if (!recordedWavBlob) return;
-      diagnoseBtn.disabled = true;
-      diagnoseBtn.textContent = t('diagnosing');
+    async function submitTurn(wavBlob){
       try {
         const form = new FormData();
-        form.append('audio', recordedWavBlob, 'attempt.wav');
-        form.append('question', question);
+        form.append('audio', wavBlob, 'attempt.wav');
+        form.append('history', JSON.stringify(sessionHistory));
         form.append('lang', lang);
         const res = await fetch(`${BACKEND_URL}/api/pronunciation/assess-free`, { method: 'POST', body: form });
         if (!res.ok) {
@@ -1994,325 +2025,87 @@ body { margin: 0; background: #171b24; }
           throw new Error(`(${res.status}) ${detail}`);
         }
         const data = await res.json();
-        const bubbleEl = addBubble('user', '', sc);
-        renderFreeResultBubble(bubbleEl, data, recordedUrl);
-        recordDiagnosis(data, { mode: 'conversation', sentence: data.recognizedText || question, category: null }, recordedWavBlob);
-        actionWrap.innerHTML = `<div class="cv-btn-row"><button class="cv-btn" id="convNextBtn">${t('nextBtn')}</button></div>`;
-        document.getElementById('convNextBtn').addEventListener('click', () => { lineIndex++; showNextLine(); });
-      } catch (err) {
-        console.error(err);
-        alert(t('ttsFailed') + '\n\n' + err.message);
-        diagnoseBtn.disabled = false;
-        diagnoseBtn.textContent = t('diagnoseBtn');
-      }
-    });
-  }
 
-  function renderFreeResultBubble(bubbleEl, data, recordedUrl){
-    const overall = data.overall || {};
-    const words = data.words || [];
-    const recognizedText = data.recognizedText || '';
-
-    const statHtml = [
-      [t('statAccuracy'), overall.AccuracyScore], [t('statFluency'), overall.FluencyScore],
-      [t('statCompleteness'), overall.CompletenessScore], [t('statOverall'), overall.PronScore],
-    ].map(([label, val]) => `<div class="cv-stat"><div class="num">${val ?? '–'}</div><div class="label">${label}</div></div>`).join('');
-
-    const wordsHtml = words.map(w => {
-      const relatedRules = w.relatedRules || [];
-      const ruleTags = relatedRules.map(r => `<span class="cv-rule-tag">${ruleLabel(r)}</span>`).join('');
-      const catText = w.estimatedCategory
-        ? (relatedRules.length ? t('ruleRelated', relatedRules.map(ruleLabel)) : t('genericError'))
-        : null;
-      return `<div class="cv-word-row">
-        <span class="w">${w.word}</span>
-        <span class="s">${w.accuracyScore ?? '–'}${t('scoreUnit')}</span>
-        ${ruleTags}
-        ${catText ? `<span class="cv-cat-sm">${catText}</span>` : `<span class="cv-ok-sm">${t('normalLabel')}</span>`}
-      </div>`;
-    }).join('');
-
-    const validBadge = data.valid === true ? `<span class="cv-ok">${t('validAnswerLabel')}</span>`
-      : data.valid === false ? `<span class="cv-cat">${t('invalidAnswerLabel')}</span>` : '';
-
-    bubbleEl.innerHTML = `
-      <div class="cv-recognized-label">${t('recognizedLabel')}</div>
-      ${recognizedText || `<span class="cv-recognized-none">${t('notRecognized')}</span>`}
-      <div class="cv-score">${overall.PronScore ?? '–'}${t('scoreUnit')}</div>
-      ${validBadge}
-      ${data.feedback ? `<div class="cv-gemini-feedback">💬 ${data.feedback}</div>` : ''}
-      <div style="margin-top:6px; font-family: var(--mono); font-size:10.5px; color: var(--text-faint);">${t('myRecording')}</div>
-      <audio controls src="${recordedUrl}" style="width:100%; height:30px; margin-top:2px;"></audio>
-      <div class="cv-detail-toggle">${t('detailShow')} ▾</div>
-      <div class="cv-detail-panel" style="display:none">
-        <div class="cv-stat-row">${statHtml}</div>
-        <div class="cv-word-list">${wordsHtml}</div>
-      </div>
-    `;
-
-    const toggle = bubbleEl.querySelector('.cv-detail-toggle');
-    const panel = bubbleEl.querySelector('.cv-detail-panel');
-    let open = false;
-    toggle.addEventListener('click', () => {
-      open = !open;
-      panel.style.display = open ? 'block' : 'none';
-      toggle.textContent = open ? `${t('detailHide')} ▴` : `${t('detailShow')} ▾`;
-    });
-  }
-
-  function renderDiagnosisBubble(bubbleEl, sentence, data, recordedUrl){
-    const overall = data.overall || {};
-    const words = data.words || [];
-    const flagged = words.some(w => w.estimatedCategory);
-
-    const statHtml = [
-      [t('statAccuracy'), overall.AccuracyScore], [t('statFluency'), overall.FluencyScore],
-      [t('statCompleteness'), overall.CompletenessScore], [t('statOverall'), overall.PronScore],
-    ].map(([label, val]) => `<div class="cv-stat"><div class="num">${val ?? '–'}</div><div class="label">${label}</div></div>`).join('');
-
-    const wordsHtml = words.map(w => {
-      const relatedRules = w.relatedRules || [];
-      const ruleTags = relatedRules.map(r => `<span class="cv-rule-tag">${ruleLabel(r)}</span>`).join('');
-      const catText = w.estimatedCategory
-        ? (relatedRules.length ? t('ruleRelated', relatedRules.map(ruleLabel)) : t('genericError'))
-        : null;
-      return `<div class="cv-word-row">
-        <span class="w">${w.word}</span>
-        <span class="s">${w.accuracyScore ?? '–'}${t('scoreUnit')}</span>
-        ${ruleTags}
-        ${catText ? `<span class="cv-cat-sm">${catText}</span>` : `<span class="cv-ok-sm">${t('normalLabel')}</span>`}
-      </div>`;
-    }).join('');
-
-    bubbleEl.innerHTML = `
-      ${sentence}
-      <div class="cv-score">${overall.PronScore ?? '–'}${t('scoreUnit')}</div>
-      ${flagged ? `<span class="cv-cat">${t('flaggedLabel')}</span>` : `<span class="cv-ok">${t('normalLabel')}</span>`}
-      <span class="cv-play">${t('listenBtn')}</span>
-      <div style="margin-top:6px; font-family: var(--mono); font-size:10.5px; color: var(--text-faint);">${t('myRecording')}</div>
-      <audio controls src="${recordedUrl}" style="width:100%; height:30px; margin-top:2px;"></audio>
-      <div class="cv-detail-toggle">${t('detailShow')} ▾</div>
-      <div class="cv-detail-panel" style="display:none">
-        <div class="sd-target-preview cv-target-preview"></div>
-        <div class="sd-rule-tags cv-rule-tags"></div>
-        <div class="cv-stat-row">${statHtml}</div>
-        <div class="cv-word-list">${wordsHtml}</div>
-      </div>
-    `;
-
-    renderTargetPreview(sentence, {
-      preview: bubbleEl.querySelector('.cv-target-preview'),
-      tagWrap: bubbleEl.querySelector('.cv-rule-tags'),
-    });
-
-    bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(sentence, e.currentTarget));
-    const toggle = bubbleEl.querySelector('.cv-detail-toggle');
-    const panel = bubbleEl.querySelector('.cv-detail-panel');
-    let open = false;
-    toggle.addEventListener('click', () => {
-      open = !open;
-      panel.style.display = open ? 'block' : 'none';
-      toggle.textContent = open ? `${t('detailHide')} ▴` : `${t('detailShow')} ▾`;
-    });
-  }
-
-  // ================================================================
-  // ===================== ③ 선택형 문장 연습 ========================
-  // ================================================================
-  const CHOICE_SETS = {
-    intro: {
-      title: { ko: '자기소개', ja: '自己紹介' }, icon: '🙋', color: '#7fa6e0',
-      turns: [
-        { question: '이름이 뭐예요?', options: ['저는 지민이에요.', '제 이름은 유키예요.', '하나예요.'] },
-        { question: '어느 나라에서 왔어요?', options: ['일본에서 왔어요.', '저는 일본 사람이에요.'] },
-        { question: '취미가 뭐예요?', options: ['영화 보는 걸 좋아해요.', '음악 듣는 걸 좋아해요.', '요리하는 걸 좋아해요.'] },
-      ],
-    },
-    restaurant: {
-      title: { ko: '식당에서', ja: 'レストランで' }, icon: '🍜', color: '#e3b158',
-      turns: [
-        { question: '몇 분이세요?', options: ['한 명이에요.', '두 명이에요.', '세 명이에요.'] },
-        { question: '뭐 드시겠어요?', options: ['김치찌개 주세요.', '비빔밥 주세요.', '된장찌개로 주세요.'] },
-        { question: '더 필요하신 거 있으세요?', options: ['물 좀 주세요.', '없어요, 괜찮아요.', '수저 좀 주세요.'] },
-      ],
-    },
-  };
-
-  let currentChoiceKey = null;
-  let choiceLineIndex = 0;
-  const choiceThread = document.getElementById('choiceThread');
-  const choiceActionWrap = document.getElementById('choiceActionWrap');
-  const choiceScenarioRow = document.getElementById('choiceScenarioRow');
-
-  function renderChoiceScenarios(){
-    choiceScenarioRow.innerHTML = '';
-    Object.entries(CHOICE_SETS).forEach(([key, sc]) => {
-      const chip = document.createElement('div');
-      chip.className = 'cv-scenario-chip' + (key === currentChoiceKey ? ' active' : '');
-      chip.innerHTML = `<div class="icon">${sc.icon}</div><div class="name">${sc.title[lang]}</div>`;
-      chip.addEventListener('click', () => startChoiceScenario(key));
-      choiceScenarioRow.appendChild(chip);
-    });
-  }
-
-  function startChoiceScenario(key){
-    currentChoiceKey = key; choiceLineIndex = 0; choiceThread.innerHTML = '';
-    document.getElementById('choicePickerScreen').style.display = 'none';
-    document.getElementById('choiceChatScreen').style.display = 'block';
-    renderChoiceScenarios(); showNextChoiceTurn();
-  }
-
-  function backToChoicePicker(){
-    document.getElementById('choiceChatScreen').style.display = 'none';
-    document.getElementById('choicePickerScreen').style.display = 'block';
-    currentChoiceKey = null;
-    renderChoiceScenarios();
-  }
-  document.getElementById('choiceBackToPickerBtn').addEventListener('click', backToChoicePicker);
-
-  function currentChoiceScenario(){ return CHOICE_SETS[currentChoiceKey]; }
-
-  function showNextChoiceTurn(){
-    const sc = currentChoiceScenario();
-    if (!sc) return;
-    if (choiceLineIndex >= sc.turns.length){ choiceActionWrap.innerHTML = `<div class="cv-done">${t('done')}</div>`; return; }
-    renderChoiceQuestion(sc, sc.turns[choiceLineIndex]);
-  }
-
-  function addChoiceBubble(speaker, html, sc){
-    const row = document.createElement('div');
-    row.className = 'cv-row ' + speaker;
-    const avatar = speaker === 'partner'
-      ? `<div class="cv-avatar" style="background:${sc.color}22;border-color:${sc.color}">${sc.icon}</div>`
-      : '';
-    row.innerHTML = `${avatar}<div class="cv-bubble">${html}</div>`;
-    choiceThread.appendChild(row);
-    return row.querySelector('.cv-bubble');
-  }
-
-  function renderChoiceQuestion(sc, turn){
-    const bubbleEl = addChoiceBubble('partner', `${turn.question}<br><span class="cv-play">${t('listenBtn')}</span>`, sc);
-    bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(turn.question, e.currentTarget));
-
-    choiceActionWrap.innerHTML = `
-      <div class="cv-action">
-        <div class="cv-option-hint">${t('chooseAnswerHint')}</div>
-        <div class="cv-option-row">
-          ${turn.options.map((opt, i) => `<button class="cv-option-chip" data-idx="${i}">${opt}</button>`).join('')}
-        </div>
-      </div>`;
-
-    choiceActionWrap.querySelectorAll('.cv-option-chip').forEach(btn => {
-      btn.addEventListener('click', () => {
-        renderChoiceUserTurn(sc, turn.options[parseInt(btn.dataset.idx, 10)]);
-      });
-    });
-  }
-
-  function renderChoiceUserTurn(sc, sentence){
-    const { result: target } = applyRules(sentence);
-    const bubbleEl = addChoiceBubble('user', `${sentence}<br><span class="cv-play">${t('listenBtn')}</span>`, sc);
-    bubbleEl.querySelector('.cv-play').addEventListener('click', (e) => playTTS(sentence, e.currentTarget));
-
-    choiceActionWrap.innerHTML = `
-      <div class="cv-action">
-        <div class="hint">${t('yourTurn')}</div>
-        <div class="cv-record-row">
-          <button class="cv-mic-btn" id="choiceMicBtn">●</button>
-          <div style="flex:1">
-            <div class="cv-record-status" id="choiceRecordStatus">${t('recordIdle')}</div>
-            <div class="cv-meter"><div class="cv-meter-fill" id="choiceMeterFill"></div></div>
-          </div>
-        </div>
-        <div id="choicePlaybackWrap" style="display:none; margin-top:10px;">
-          <audio id="choicePlaybackAudio" controls style="width:100%; height:32px;"></audio>
-        </div>
-        <div class="cv-btn-row">
-          <button class="cv-btn" id="choiceDiagnoseBtn" disabled>${t('diagnoseBtn')}</button>
-          <button class="cv-btn secondary" id="choiceReRecordBtn">${t('reRecordBtn')}</button>
-        </div>
-      </div>`;
-
-    setupChoiceRecording(sentence, bubbleEl);
-  }
-
-  function setupChoiceRecording(sentence, bubbleEl){
-    let audioContext, sourceNode, processorNode, gainNode, mediaStream;
-    let recordedChunks = [], recordedWavBlob = null, recordedUrl = null, recording = false;
-
-    const micBtn = document.getElementById('choiceMicBtn');
-    const recordStatus = document.getElementById('choiceRecordStatus');
-    const meterFill = document.getElementById('choiceMeterFill');
-    const diagnoseBtn = document.getElementById('choiceDiagnoseBtn');
-
-    async function startRecording(){
-      try { mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } }); }
-      catch (err) { recordStatus.textContent = t('ttsFailed'); return; }
-      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-      sourceNode = audioContext.createMediaStreamSource(mediaStream);
-      processorNode = audioContext.createScriptProcessor(4096, 1, 1);
-      gainNode = audioContext.createGain(); gainNode.gain.value = 0;
-      recordedChunks = [];
-      processorNode.onaudioprocess = (e) => {
-        const input = e.inputBuffer.getChannelData(0);
-        recordedChunks.push(new Float32Array(input));
-        let sum = 0; for (let i = 0; i < input.length; i++) sum += input[i]*input[i];
-        meterFill.style.width = Math.min(100, Math.sqrt(sum/input.length)*400) + '%';
-      };
-      sourceNode.connect(processorNode); processorNode.connect(gainNode); gainNode.connect(audioContext.destination);
-      recording = true; micBtn.classList.add('recording'); micBtn.textContent = '■';
-      recordStatus.textContent = t('recordingNow');
-      diagnoseBtn.disabled = true;
-    }
-
-    function stopRecording(){
-      recording = false; micBtn.classList.remove('recording'); micBtn.textContent = '●'; meterFill.style.width = '0%';
-      processorNode.disconnect(); sourceNode.disconnect(); gainNode.disconnect();
-      mediaStream.getTracks().forEach(tr => tr.stop());
-      const sampleRate = audioContext.sampleRate; audioContext.close();
-      recordedWavBlob = encodeWav(recordedChunks, sampleRate);
-      recordedUrl = URL.createObjectURL(recordedWavBlob);
-      const playbackAudio = document.getElementById('choicePlaybackAudio');
-      const playbackWrap = document.getElementById('choicePlaybackWrap');
-      playbackAudio.src = recordedUrl;
-      playbackWrap.style.display = 'block';
-      recordStatus.textContent = t('recordDone');
-      diagnoseBtn.disabled = false;
-    }
-
-    micBtn.addEventListener('click', () => { recording ? stopRecording() : startRecording(); });
-    document.getElementById('choiceReRecordBtn').addEventListener('click', () => {
-      recordedWavBlob = null; diagnoseBtn.disabled = true; recordStatus.textContent = t('recordIdle');
-      document.getElementById('choicePlaybackWrap').style.display = 'none';
-    });
-
-    diagnoseBtn.addEventListener('click', async () => {
-      if (!recordedWavBlob) return;
-      diagnoseBtn.disabled = true;
-      diagnoseBtn.textContent = t('diagnosing');
-      try {
-        const form = new FormData();
-        form.append('audio', recordedWavBlob, 'attempt.wav');
-        form.append('sentence', sentence);
-        const res = await fetch(`${BACKEND_URL}/api/pronunciation/assess`, { method: 'POST', body: form });
-        if (!res.ok) {
-          let detail = '';
-          try { const errJson = await res.json(); detail = errJson.error || ''; } catch (e2) {}
-          throw new Error(`(${res.status}) ${detail}`);
+        addBubble('user', data.recognizedText || `<span class="cv-recognized-none">${t('notRecognized')}</span>`);
+        sessionHistory.push({ speaker: 'user', text: data.recognizedText || '' });
+        sessionTurns.push({
+          aiLine: sessionHistory.length >= 2 ? sessionHistory[sessionHistory.length - 2].text : '',
+          recognizedText: data.recognizedText, overall: data.overall, words: data.words,
+          valid: data.valid, feedback: data.feedback, audioBlob: wavBlob, ts: Date.now(),
+        });
+        if (data.overall) {
+          recordDiagnosis(
+            { overall: data.overall, words: data.words },
+            { mode: 'conversation', sentence: data.recognizedText, category: null },
+            wavBlob
+          );
         }
-        const data = await res.json();
-        renderDiagnosisBubble(bubbleEl, sentence, data, recordedUrl);
-        recordDiagnosis(data, { mode: 'choice', sentence, category: null }, recordedWavBlob);
-        choiceActionWrap.innerHTML = `<div class="cv-btn-row"><button class="cv-btn" id="choiceNextBtn">${t('nextBtn')}</button></div>`;
-        document.getElementById('choiceNextBtn').addEventListener('click', () => { choiceLineIndex++; showNextChoiceTurn(); });
+
+        // 세션 종료는 오직 타이머(선택한 시간)만으로 판단한다 — Gemini가 어쩌다
+        // 다음 대사 생성에 실패해도(네트워크 문제 등) 대화가 끊기지 않도록,
+        // 그 경우엔 대체 문장으로 계속 이어간다.
+        if (sessionActive) {
+          renderAiLine(data.nextLine || FALLBACK_NEXT_LINE[lang]);
+        }
       } catch (err) {
         console.error(err);
-        alert(t('ttsFailed') + '\n\n' + err.message);
-        diagnoseBtn.disabled = false;
-        diagnoseBtn.textContent = t('diagnoseBtn');
+        recordStatus.textContent = t('ttsFailed');
+        micBtn.disabled = false;
       }
-    });
+    }
   }
+
+  function endConversationSession(){
+    if (!sessionActive) return;
+    sessionActive = false;
+    clearInterval(sessionTimerInterval);
+    document.getElementById('cvTimer').style.display = 'none';
+    actionWrap.innerHTML = `
+      <div class="cv-done">${t('sessionEnded')}</div>
+      <button class="cv-btn" id="viewResultsBtn" style="width:100%; margin-top:10px;">${t('viewResultsBtn')}</button>
+    `;
+    document.getElementById('viewResultsBtn').addEventListener('click', showConversationResults);
+  }
+
+  function showConversationResults(){
+    const scoredTurns = sessionTurns.filter(t => t.overall);
+    const avg = (field) => scoredTurns.length
+      ? Math.round(scoredTurns.reduce((s, t) => s + (t.overall[field] || 0), 0) / scoredTurns.length) : null;
+
+    const content = document.getElementById('conversationResultsContent');
+    content.innerHTML = `
+      <div class="an-section-title" style="margin-top:0;">${t('resultsTitle')}</div>
+      <div class="an-stat-row">
+        <div class="an-stat"><div class="num">${scoredTurns.length}</div><div class="label">${t('totalPractice')}</div></div>
+        <div class="an-stat"><div class="num">${avg('PronScore') ?? '–'}</div><div class="label">${t('statOverall')}</div></div>
+      </div>
+      <div class="an-stat-row">
+        <div class="an-stat"><div class="num">${avg('AccuracyScore') ?? '–'}</div><div class="label">${t('statAccuracy')}</div></div>
+        <div class="an-stat"><div class="num">${avg('FluencyScore') ?? '–'}</div><div class="label">${t('statFluency')}</div></div>
+        <div class="an-stat"><div class="num">${avg('CompletenessScore') ?? '–'}</div><div class="label">${t('statCompleteness')}</div></div>
+      </div>
+      <div class="an-section-title">${t('perTurnResultsTitle')}</div>
+      <div class="an-day-list">
+        ${scoredTurns.map(turn => `
+          <div class="an-day-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
+            <div style="font-family: var(--mono); font-size:10.5px; color: var(--text-faint);">${turn.aiLine}</div>
+            <div style="display:flex; width:100%; gap:8px; align-items:center;">
+              <span class="an-day-sentence">${turn.recognizedText}</span>
+              <span class="an-day-score">${turn.overall.PronScore ?? '–'}${t('scoreUnit')}</span>
+            </div>
+            <audio controls src="${URL.createObjectURL(turn.audioBlob)}" style="width:100%; height:28px;"></audio>
+            ${turn.valid === true ? `<span class="cv-ok">${t('validAnswerLabel')}</span>` : turn.valid === false ? `<span class="cv-cat">${t('invalidAnswerLabel')}</span>` : ''}
+            ${turn.feedback ? `<div class="cv-gemini-feedback">💬 ${turn.feedback}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+    document.getElementById('conversationResultsModal').style.display = 'flex';
+  }
+  document.getElementById('conversationResultsCloseBtn').addEventListener('click', () => {
+    document.getElementById('conversationResultsModal').style.display = 'none';
+    backToScenarioPicker();
+  });
 
   // ================= 언어 토글 (양쪽 뷰 공유) =================
   document.getElementById('langJa').addEventListener('click', () => setLang('ja'));
@@ -2336,13 +2129,9 @@ body { margin: 0; background: #171b24; }
     updateCustomTarget();
     updateCustomRecordStatusText();
 
-    // 회화 연습 뷰 갱신 (진행 중이던 대화는 언어가 섞이지 않도록 초기화)
+    // 회화 연습 뷰 갱신 (세션 진행 중엔 굳이 끊지 않고, 선택 화면 라벨만 갱신)
     renderScenarios();
-    if (currentScenarioKey) { cvThread.innerHTML = ''; lineIndex = 0; showNextLine(); }
-
-    // 선택형 문장 연습 뷰 갱신
-    renderChoiceScenarios();
-    if (currentChoiceKey) { choiceThread.innerHTML = ''; choiceLineIndex = 0; showNextChoiceTurn(); }
+    renderDurations();
 
     // 학습 기록 뷰 갱신 (이미 불러온 데이터가 있으면 재조회 없이 다시 그리기만)
     if (currentHistData.length > 0) renderAnalyticsUI();
