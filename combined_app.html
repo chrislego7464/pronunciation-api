@@ -429,6 +429,7 @@ body { margin: 0; background: #171b24; color: var(--text); }
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .cv-mic-btn.recording { background: var(--coral); color: var(--surface); animation: cv-pulse 1.4s infinite; }
+.cv-mic-btn:disabled { opacity: 0.35; cursor: not-allowed; animation: none; }
 @keyframes cv-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(226,104,90,.5); } 50% { box-shadow: 0 0 0 9px rgba(226,104,90,0); } }
 .cv-meter { height: 5px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin-top: 4px; }
 .cv-meter-fill { height: 100%; background: var(--coral); width: 0%; }
@@ -781,7 +782,7 @@ body { margin: 0; background: #171b24; color: var(--text); }
     startConversationBtn: { ko: '대화 시작하기', ja: '会話を始める' },
     minUnit: { ko: '분', ja: '分' },
     submitTurnBtn: { ko: '전송하기', ja: '送信する' },
-    submitting: { ko: '전송 중...', ja: '送信中...' },
+    submitting: { ko: 'AI가 답변을 준비하는 중', ja: 'AIが返事を準備中' },
     sessionEnded: { ko: '⏱️ 시간이 종료됐어요!', ja: '⏱️ 時間が終了しました！' },
     viewResultsBtn: { ko: '결과 보기', ja: '結果を見る' },
     resultsTitle: { ko: '대화 결과', ja: '会話の結果' },
@@ -909,24 +910,47 @@ body { margin: 0; background: #171b24; color: var(--text); }
 
   // ================= TTS (양쪽 뷰 공유) =================
   const ttsCache = new Map();
+  let currentTTSAudio = null;
+  function stopTTS(){
+    if (currentTTSAudio) { currentTTSAudio.pause(); currentTTSAudio.currentTime = 0; currentTTSAudio = null; }
+  }
+
+  // 점이 움직이는 "진행 중" 표시 — 정적인 텍스트는 멈춘 것처럼 보일 수 있어서,
+  // 실제로 뭔가 계속 진행되고 있다는 걸 눈으로 확인할 수 있게 한다.
+  function startLoadingDots(el, baseText){
+    let n = 0;
+    el.textContent = baseText;
+    const interval = setInterval(() => {
+      n = (n + 1) % 4;
+      el.textContent = baseText + '.'.repeat(n);
+    }, 400);
+    return () => clearInterval(interval);
+  }
   async function playTTS(sentence, triggerEl){
     if (!sentence) return;
+    stopTTS(); // 새로 재생하기 전에 이전에 재생 중이던 것부터 멈춘다
     if (triggerEl) triggerEl.style.opacity = '0.5';
     try {
-      if (ttsCache.has(sentence)) { await new Audio(ttsCache.get(sentence)).play(); return; }
-      const backendUrl = BACKEND_URL;
-      const res = await fetch(`${backendUrl}/api/pronunciation/tts`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sentence }),
-      });
-      if (!res.ok) {
-        let detail = '';
-        try { const errJson = await res.json(); detail = errJson.error || ''; } catch (e2) {}
-        throw new Error(`(${res.status}) ${detail}`);
+      let url;
+      if (ttsCache.has(sentence)) {
+        url = ttsCache.get(sentence);
+      } else {
+        const backendUrl = BACKEND_URL;
+        const res = await fetch(`${backendUrl}/api/pronunciation/tts`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sentence }),
+        });
+        if (!res.ok) {
+          let detail = '';
+          try { const errJson = await res.json(); detail = errJson.error || ''; } catch (e2) {}
+          throw new Error(`(${res.status}) ${detail}`);
+        }
+        const blob = await res.blob();
+        url = URL.createObjectURL(blob);
+        ttsCache.set(sentence, url);
       }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      ttsCache.set(sentence, url);
-      await new Audio(url).play();
+      const audio = new Audio(url);
+      currentTTSAudio = audio;
+      await audio.play();
     } catch (err) {
       console.error('TTS 재생 실패:', err);
     } finally {
@@ -1984,6 +2008,7 @@ body { margin: 0; background: #171b24; color: var(--text); }
 
     function startRecording(){
       if (!micReady || !mediaStream) { recordStatus.textContent = t('ttsFailed'); return; }
+      stopTTS(); // 녹음을 시작하면 AI 음성이 재생 중이었어도 바로 멈춘다
       audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
       sourceNode = audioContext.createMediaStreamSource(mediaStream);
       processorNode = audioContext.createScriptProcessor(4096, 1, 1);
@@ -2016,6 +2041,7 @@ body { margin: 0; background: #171b24; color: var(--text); }
 
     async function submitTurn(wavBlob){
       pauseTimer(); // 음성 인식 + Gemini 응답을 기다리는 동안은 시간이 안 흐르도록
+      const stopDots = startLoadingDots(recordStatus, t('submitting'));
       try {
         const form = new FormData();
         form.append('audio', wavBlob, 'attempt.wav');
@@ -2028,6 +2054,7 @@ body { margin: 0; background: #171b24; color: var(--text); }
           throw new Error(`(${res.status}) ${detail}`);
         }
         const data = await res.json();
+        stopDots();
 
         addBubble('user', data.recognizedText || `<span class="cv-recognized-none">${t('notRecognized')}</span>`);
         sessionHistory.push({ speaker: 'user', text: data.recognizedText || '' });
@@ -2052,6 +2079,7 @@ body { margin: 0; background: #171b24; color: var(--text); }
         }
       } catch (err) {
         console.error(err);
+        stopDots();
         recordStatus.textContent = t('ttsFailed');
         micBtn.disabled = false;
         resumeTimer();
