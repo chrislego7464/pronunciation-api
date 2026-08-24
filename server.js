@@ -10,7 +10,7 @@ const { synthesizeSpeech } = require('./azureTextToSpeech');
 const { translateText } = require('./azureTranslate');
 const { saveHistoryRecord, fetchHistoryForUser } = require('./historyStore');
 const { applyRules } = require('./koreanPhonology');
-const { checkAnswerValidity } = require('./geminiValidity');
+const { checkAnswerValidity, generateOpeningLine, continueConversation } = require('./geminiValidity');
 
 const app = express();
 app.use(express.json());
@@ -164,40 +164,67 @@ app.post('/api/pronunciation/assess', upload.single('audio'), async (req, res) =
 
 /**
  * POST /api/pronunciation/assess-free  (multipart/form-data)
- * fields: audio (파일), question (상대가 물어본 질문, 채점용 맥락), lang ('ko'|'ja')
+ * fields: audio (파일), question (맥락, history 없을 때만 사용), lang ('ko'|'ja'),
+ *         history (선택, JSON 문자열 [{speaker:'ai'|'user', text}, ...])
  * -> 목표 문장을 모르는 자유 발화를 인식(unscripted)하고, 인식된 텍스트에
- *    우리 규칙 엔진을 적용해 발음 규칙 태그를 붙인 뒤, Gemini로 "질문에 대한
- *    타당한 대답인가"를 판단해서 함께 반환한다.
+ *    우리 규칙 엔진을 적용해 발음 규칙 태그를 붙인다.
+ *    history가 있으면(진짜 대화 모드) Gemini가 타당성 판단과 함께 다음 대사도
+ *    생성해서 nextLine으로 돌려준다. history가 없으면 타당성 판단만 한다.
  */
 app.post('/api/pronunciation/assess-free', upload.single('audio'), async (req, res) => {
-  const { question, lang } = req.body || {};
-  if (!req.file || !question) {
-    return res.status(400).json({ error: 'audio 파일과 question이 모두 필요합니다.' });
+  const { question, lang, history } = req.body || {};
+  if (!req.file || (!question && !history)) {
+    return res.status(400).json({ error: 'audio 파일과 question 또는 history가 필요합니다.' });
   }
   try {
     const raw = await assessPronunciationUnscripted({ audioFilePath: req.file.path });
     const recognizedText = raw.DisplayText || (raw.NBest && raw.NBest[0] && raw.NBest[0].Display) || '';
     if (!recognizedText) {
       return res.json({
-        recognizedText: '', overall: null, words: [],
-        valid: false, feedback: lang === 'ja' ? '音声を認識できませんでした。もう一度お試しください。' : '음성을 인식하지 못했어요. 다시 시도해주세요.',
+        recognizedText: '', overall: null, words: [], valid: false, nextLine: null,
+        feedback: lang === 'ja' ? '音声を認識できませんでした。もう一度お試しください。' : '음성을 인식하지 못했어요. 다시 시도해주세요.',
       });
     }
     const annotated = annotateWithPhonology(raw, recognizedText);
 
-    let validity = { valid: null, feedback: '' };
+    let validity = { valid: null, feedback: '', nextLine: null };
     try {
-      validity = await checkAnswerValidity(question, recognizedText, lang || 'ko');
+      if (history) {
+        const parsedHistory = JSON.parse(history);
+        validity = await continueConversation({ history: parsedHistory, recognizedText, lang: lang || 'ko' });
+      } else {
+        validity = await checkAnswerValidity(question, recognizedText, lang || 'ko');
+      }
     } catch (geminiErr) {
-      console.error('Gemini 타당성 판단 실패(발음 점수는 계속 반환):', geminiErr);
+      console.error('Gemini 처리 실패(발음 점수는 계속 반환):', geminiErr);
     }
 
-    res.json({ recognizedText, overall: annotated.overall, words: annotated.words, valid: validity.valid, feedback: validity.feedback });
+    res.json({
+      recognizedText, overall: annotated.overall, words: annotated.words,
+      valid: validity.valid, feedback: validity.feedback, nextLine: validity.nextLine || null,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: String((err && err.message) || err) });
   } finally {
     fs.unlink(req.file.path, () => {});
+  }
+});
+
+/**
+ * POST /api/conversation/opening
+ * body: { topic, lang }
+ * -> 대화 세션을 시작할 때, 주제만 가지고 AI 쪽 첫 대사를 생성한다.
+ */
+app.post('/api/conversation/opening', async (req, res) => {
+  const { topic, lang } = req.body || {};
+  if (!topic) return res.status(400).json({ error: 'topic이 필요합니다.' });
+  try {
+    const nextLine = await generateOpeningLine(topic, lang || 'ko');
+    res.json({ nextLine });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: String((err && err.message) || err) });
   }
 });
 

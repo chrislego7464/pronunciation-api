@@ -53,4 +53,77 @@ ${langInstruction} 학습자를 격려하는 짧고 다정한 어조로 한두 �
   }
 }
 
-module.exports = { checkAnswerValidity };
+/**
+ * 대화 시작 시, 주제만 가지고 AI 쪽 첫 대사를 생성한다.
+ */
+async function generateOpeningLine(topic, lang) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY 환경변수가 필요합니다.');
+
+  const prompt = `당신은 한국어를 배우는 일본인 초급 학습자와 대화하는 친절한 한국인 대화 상대입니다.
+대화 주제: "${topic}"
+쉬운 한국어(TOPIK 1~2급 수준)로, 대화를 시작하는 첫 대사를 한 문장만 만드세요. 짧은 인사와 함께 질문 하나로 시작하면 좋습니다.
+
+반드시 아래 JSON 형식으로만 답하세요 (다른 텍스트 없이 JSON만):
+{"nextLine": "첫 대사(한국어)"}`;
+
+  const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+  });
+  if (!res.ok) throw new Error(`Gemini 요청 실패 (${res.status}): ${await res.text()}`);
+  const data = await res.json();
+  const text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
+    data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
+    data.candidates[0].content.parts[0].text) || '';
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  const parsed = JSON.parse(cleaned);
+  return parsed.nextLine || '';
+}
+
+/**
+ * 대화 중 매 턴: 지금까지의 대화 기록 + 학습자의 최신 답변을 주고,
+ * (1) 답변이 타당한지 판단 + (2) 자연스러운 다음 대사를 함께 생성한다.
+ * history: [{ speaker: 'ai'|'user', text: string }, ...]
+ */
+async function continueConversation({ history, recognizedText, lang }) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY 환경변수가 필요합니다.');
+
+  const langInstruction = lang === 'ja'
+    ? 'feedback은 일본어로 쓰세요. nextLine은 실제 대화 대사이므로 항상 한국어로 쓰세요.'
+    : 'feedback과 nextLine 모두 한국어로 쓰세요.';
+  const historyText = (history || []).map(h => `${h.speaker === 'ai' ? 'AI' : '학습자'}: ${h.text}`).join('\n');
+
+  const prompt = `당신은 한국어를 배우는 일본인 초급 학습자와 대화하는 친절한 한국인 대화 상대입니다.
+쉬운 한국어(TOPIK 1~2급 수준)로, 짧고 자연스럽게 대화하세요. 질문도 하고 리액션도 하면서, 실제 친구처럼 대화를 이어가세요.
+
+지금까지의 대화:
+${historyText || '(대화 시작 전)'}
+
+학습자의 최신 답변(음성 인식 결과라 오타나 어색한 부분이 있을 수 있음): "${recognizedText}"
+
+1. 이 답변이 앞선 맥락에 자연스럽고 타당한 대답인지 판단하세요. 문법이 완벽하지 않아도 의미가 통하면 타당합니다.
+2. 대화를 자연스럽게 이어갈 다음 대사를 한 문장만 만드세요 (질문이어도 되고 리액션이어도 됩니다).
+${langInstruction} 학습자를 격려하는 다정한 어조로, feedback은 한두 문장만 쓰세요.
+
+반드시 아래 JSON 형식으로만 답하세요 (다른 텍스트 없이 JSON만):
+{"valid": true 또는 false, "feedback": "한두 문장 설명", "nextLine": "다음 대사(한국어)"}`;
+
+  const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+  });
+  if (!res.ok) throw new Error(`Gemini 요청 실패 (${res.status}): ${await res.text()}`);
+  const data = await res.json();
+  const text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
+    data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
+    data.candidates[0].content.parts[0].text) || '';
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  const parsed = JSON.parse(cleaned);
+  return { valid: !!parsed.valid, feedback: parsed.feedback || '', nextLine: parsed.nextLine || '' };
+}
+
+module.exports = { checkAnswerValidity, generateOpeningLine, continueConversation };
