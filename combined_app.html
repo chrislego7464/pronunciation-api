@@ -406,15 +406,15 @@ body { margin: 0; background: #171b24; }
   display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 11.5px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; cursor: pointer; color: var(--gold);
 }
-.cv-bubble .cv-score { font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 6px; }
-.cv-bubble .cv-cat { font-family: var(--mono); font-size: 10.5px; color: var(--coral); background: rgba(226,104,90,0.1); border: 1px solid rgba(226,104,90,0.35); border-radius: 999px; padding: 2px 8px; margin-top: 4px; display: inline-block; }
+.cv-score { font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 6px; }
+.cv-cat { font-family: var(--mono); font-size: 10.5px; color: var(--coral); background: rgba(226,104,90,0.1); border: 1px solid rgba(226,104,90,0.35); border-radius: 999px; padding: 2px 8px; margin-top: 4px; display: inline-block; }
 .cv-recognized-label { font-family: var(--mono); font-size: 10px; color: var(--text-faint); margin-bottom: 3px; }
 .cv-recognized-none { color: var(--text-faint); font-style: italic; }
 .cv-gemini-feedback {
   margin-top: 8px; padding: 8px 10px; background: rgba(127,166,224,0.08); border: 1px solid rgba(127,166,224,0.3);
   border-radius: 8px; font-family: var(--sans); font-size: 12.5px; color: var(--text); line-height: 1.5;
 }
-.cv-bubble .cv-ok { font-family: var(--mono); font-size: 10.5px; color: var(--teal); margin-top: 4px; display: inline-block; }
+.cv-ok { font-family: var(--mono); font-size: 10.5px; color: var(--teal); background: rgba(92,201,167,0.1); border: 1px solid rgba(92,201,167,0.35); border-radius: 999px; padding: 2px 8px; margin-top: 4px; display: inline-block; }
 
 .cv-action { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-top: 6px; }
 .cv-action .hint { font-size: 12.5px; color: var(--text-faint); margin-bottom: 10px; }
@@ -742,6 +742,7 @@ body { margin: 0; background: #171b24; }
     pickSentenceHint: { ko: '위에서 문장을 먼저 골라주세요.', ja: '上で文を選んでください。' },
     listenBtnWide: { ko: '🔊 발음 듣기', ja: '🔊 発音を聞く' },
     recordIdle: { ko: '마이크 버튼을 눌러 녹음을 시작하세요', ja: 'マイクのボタンを押して録音を始めてください' },
+    micPreparing: { ko: '마이크 준비 중...', ja: 'マイク準備中...' },
     recordDenied: { ko: '마이크 권한이 거부됐어요. 브라우저 주소창 옆 마이크 아이콘에서 허용해주세요.', ja: 'マイクの使用が許可されていません。ブラウザのアドレスバー横のマイクのアイコンから許可してください。' },
     recordingNow: { ko: '녹음 중... 다시 누르면 정지', ja: '録音中... もう一度押すと停止します' },
     recordDone: { ko: '녹음 완료 — 재생해서 확인하거나 바로 진단하세요', ja: '録音完了 — 再生して確認するか、そのまま診断してください' },
@@ -783,6 +784,7 @@ body { margin: 0; background: #171b24; }
     resultsTitle: { ko: '대화 결과', ja: '会話の結果' },
     perTurnResultsTitle: { ko: '내가 답한 문장들', ja: '自分が答えた文' },
     recognizedLabel: { ko: '인식된 내 대답', ja: '認識された自分の答え' },
+    correctPronLabel: { ko: '내가 말한 문장의 올바른 발음', ja: '自分が言った文の正しい発音' },
     notRecognized: { ko: '(음성을 인식하지 못했어요)', ja: '（音声を認識できませんでした）' },
     validAnswerLabel: { ko: '✅ 타당한 대답이에요', ja: '✅ 適切な答えです' },
     invalidAnswerLabel: { ko: '❓ 다시 생각해보세요', ja: '❓ もう一度考えてみましょう' },
@@ -1849,6 +1851,7 @@ body { margin: 0; background: #171b24; }
   let conversationStarter = 'ai'; // 'ai' | 'user'
   let selectedDurationSec = null;
   let sessionActive = false;
+  let activeMediaStream = null; // 미리 켜둔 마이크 스트림 — 세션이 갑자기 끝나도 확실히 꺼주기 위해 추적
   let remainingMs = 0;
   let timerPaused = true; // AI 응답을 기다리는 동안은 시간이 안 흐르도록
   let sessionTimerInterval = null;
@@ -1889,6 +1892,7 @@ body { margin: 0; background: #171b24; }
   function backToScenarioPicker(){
     if (sessionTimerInterval) clearInterval(sessionTimerInterval);
     sessionActive = false;
+    if (activeMediaStream) { activeMediaStream.getTracks().forEach(tr => tr.stop()); activeMediaStream = null; }
     document.getElementById('conversationChatScreen').style.display = 'none';
     document.getElementById('scenarioPickerScreen').style.display = 'block';
     document.getElementById('cvTimer').style.display = 'none';
@@ -1984,14 +1988,30 @@ body { margin: 0; background: #171b24; }
   function setupSessionRecording(){
     let audioContext, sourceNode, processorNode, gainNode, mediaStream;
     let recordedChunks = [], recording = false;
+    let micReady = false;
 
     const micBtn = document.getElementById('convMicBtn');
     const recordStatus = document.getElementById('convRecordStatus');
     const meterFill = document.getElementById('convMeterFill');
 
-    async function startRecording(){
-      try { mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } }); }
-      catch (err) { recordStatus.textContent = t('ttsFailed'); return; }
+    // 마이크를 미리 켜둔다 — 실제로 버튼을 누르는 순간엔 지연 없이 바로 캡처가
+    // 시작되도록, 화면이 뜨자마자(사용자가 버튼을 누르기 전에) 준비해둔다.
+    // getUserMedia는 수십~수백ms가 걸릴 수 있는데, 버튼 클릭 시점에 이걸 기다리면
+    // 그 사이에 시작한 말의 첫 부분이 녹음에서 잘려나갈 수 있다.
+    (async function prewarmMic(){
+      recordStatus.textContent = t('micPreparing');
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } });
+        activeMediaStream = mediaStream;
+        micReady = true;
+        if (!recording) recordStatus.textContent = t('recordIdle');
+      } catch (err) {
+        recordStatus.textContent = t('ttsFailed');
+      }
+    })();
+
+    function startRecording(){
+      if (!micReady || !mediaStream) { recordStatus.textContent = t('ttsFailed'); return; }
       audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
       sourceNode = audioContext.createMediaStreamSource(mediaStream);
       processorNode = audioContext.createScriptProcessor(4096, 1, 1);
@@ -2012,6 +2032,7 @@ body { margin: 0; background: #171b24; }
       recording = false; micBtn.classList.remove('recording'); micBtn.textContent = '●'; meterFill.style.width = '0%';
       processorNode.disconnect(); sourceNode.disconnect(); gainNode.disconnect();
       mediaStream.getTracks().forEach(tr => tr.stop());
+      activeMediaStream = null;
       const sampleRate = audioContext.sampleRate; audioContext.close();
       const wavBlob = encodeWav(recordedChunks, sampleRate);
       micBtn.disabled = true;
@@ -2070,6 +2091,7 @@ body { margin: 0; background: #171b24; }
     if (!sessionActive) return;
     sessionActive = false;
     clearInterval(sessionTimerInterval);
+    if (activeMediaStream) { activeMediaStream.getTracks().forEach(tr => tr.stop()); activeMediaStream = null; }
     document.getElementById('cvTimer').style.display = 'none';
     actionWrap.innerHTML = `
       <div class="cv-done">${t('sessionEnded')}</div>
@@ -2097,8 +2119,24 @@ body { margin: 0; background: #171b24; }
       </div>
       <div class="an-section-title">${t('perTurnResultsTitle')}</div>
       <div class="an-day-list">
-        ${scoredTurns.map(turn => `
-          <div class="an-day-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
+        ${scoredTurns.map((turn, i) => {
+          const words = turn.words || [];
+          const wordsHtml = words.map(w => {
+            const relatedRules = w.relatedRules || [];
+            const ruleTags = relatedRules.map(r => `<span class="cv-rule-tag">${ruleLabel(r)}</span>`).join('');
+            const catText = w.estimatedCategory
+              ? (relatedRules.length ? t('ruleRelated', relatedRules.map(ruleLabel)) : t('genericError'))
+              : null;
+            return `<div class="cv-word-row">
+              <span class="w">${w.word}</span>
+              <span class="s">${w.accuracyScore ?? '–'}${t('scoreUnit')}</span>
+              ${ruleTags}
+              ${catText ? `<span class="cv-cat-sm">${catText}</span>` : `<span class="cv-ok-sm">${t('normalLabel')}</span>`}
+            </div>`;
+          }).join('');
+
+          return `
+          <div class="an-day-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
             <div style="font-family: var(--mono); font-size:10.5px; color: var(--text-faint);">${turn.aiLine}</div>
             <div style="display:flex; width:100%; gap:8px; align-items:center;">
               <span class="an-day-sentence">${turn.recognizedText}</span>
@@ -2107,11 +2145,42 @@ body { margin: 0; background: #171b24; }
             <audio controls src="${URL.createObjectURL(turn.audioBlob)}" style="width:100%; height:28px;"></audio>
             ${turn.valid === true ? `<span class="cv-ok">${t('validAnswerLabel')}</span>` : turn.valid === false ? `<span class="cv-cat">${t('invalidAnswerLabel')}</span>` : ''}
             ${turn.feedback ? `<div class="cv-gemini-feedback">💬 ${turn.feedback}</div>` : ''}
-          </div>
-        `).join('')}
+            <div class="cv-detail-toggle" data-idx="${i}">${t('detailShow')} ▾</div>
+            <div class="cv-detail-panel" id="resultDetail${i}" style="display:none; width:100%;">
+              <div class="cv-recognized-label">${t('correctPronLabel')}</div>
+              <div class="sd-target-preview cv-target-preview" id="resultTarget${i}"></div>
+              <div class="sd-rule-tags cv-rule-tags" id="resultTags${i}"></div>
+              <div class="cv-stat-row">
+                <div class="cv-stat"><div class="num">${turn.overall.AccuracyScore ?? '–'}</div><div class="label">${t('statAccuracy')}</div></div>
+                <div class="cv-stat"><div class="num">${turn.overall.FluencyScore ?? '–'}</div><div class="label">${t('statFluency')}</div></div>
+                <div class="cv-stat"><div class="num">${turn.overall.CompletenessScore ?? '–'}</div><div class="label">${t('statCompleteness')}</div></div>
+              </div>
+              <div class="cv-word-list">${wordsHtml}</div>
+            </div>
+          </div>`;
+        }).join('')}
       </div>
     `;
     document.getElementById('conversationResultsModal').style.display = 'flex';
+
+    scoredTurns.forEach((turn, i) => {
+      const previewEl = document.getElementById(`resultTarget${i}`);
+      const tagEl = document.getElementById(`resultTags${i}`);
+      if (previewEl && tagEl && turn.recognizedText) {
+        renderTargetPreview(turn.recognizedText, { preview: previewEl, tagWrap: tagEl });
+      }
+    });
+
+    content.querySelectorAll('.cv-detail-toggle').forEach(toggle => {
+      const idx = toggle.dataset.idx;
+      const panel = document.getElementById(`resultDetail${idx}`);
+      let open = false;
+      toggle.addEventListener('click', () => {
+        open = !open;
+        panel.style.display = open ? 'block' : 'none';
+        toggle.textContent = open ? `${t('detailHide')} ▴` : `${t('detailShow')} ▾`;
+      });
+    });
   }
   document.getElementById('conversationResultsCloseBtn').addEventListener('click', () => {
     document.getElementById('conversationResultsModal').style.display = 'none';

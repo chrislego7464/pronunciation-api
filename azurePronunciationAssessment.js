@@ -113,6 +113,9 @@ function assessPronunciationUnscripted({ audioFilePath, language = 'ko-KR' }) {
 
     const speechConfig = sdk.SpeechConfig.fromSubscription(speechKey, speechRegion);
     speechConfig.speechRecognitionLanguage = language;
+    // 억양만으로 "물음표일 것 같다"고 추론해서 잘못 붙이는 걸 막는다.
+    // 사용자가 실제로 문장부호를 말한 경우에만 반영되도록 한다.
+    speechConfig.setServiceProperty('punctuation', 'explicit', sdk.ServicePropertyChannel.UriQueryParameter);
     const audioConfig = sdk.AudioConfig.fromWavFileInput(audioBuffer);
 
     const pronunciationConfig = new sdk.PronunciationAssessmentConfig(
