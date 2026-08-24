@@ -13,6 +13,19 @@
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
+/**
+ * 안전장치: Gemini가 프롬프트 지시를 어기고 한글이 아닌 텍스트(일본어 등)를
+ * nextLine으로 돌려주는 경우를 감지한다. 텍스트에서 공백을 뺀 글자 수 중
+ * 한글 비율이 낮으면 "한국어가 아니다"로 판단한다.
+ */
+function looksKorean(text) {
+  if (!text) return false;
+  const stripped = text.replace(/\s/g, '');
+  if (stripped.length === 0) return false;
+  const hangulCount = (stripped.match(/[가-힣]/g) || []).length;
+  return hangulCount / stripped.length >= 0.3;
+}
+
 async function checkAnswerValidity(question, userAnswer, lang) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY 환경변수가 필요합니다.');
@@ -60,12 +73,15 @@ async function generateOpeningLine(topic, lang) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY 환경변수가 필요합니다.');
 
-  const prompt = `당신은 한국어를 배우는 일본인 초급 학습자와 대화하는 친절한 한국인 대화 상대입니다.
+  const prompt = `[중요한 규칙] nextLine은 반드시 한글(한국어)로만 작성하세요. 일본어, 영어, 그 외 어떤 언어도 절대 섞지 마세요.
+
+당신은 한국어를 배우는 일본인 초급 학습자와 대화하는 친절한 한국인 대화 상대입니다.
 대화 주제: "${topic}"
 쉬운 한국어(TOPIK 1~2급 수준)로, 대화를 시작하는 첫 대사를 한 문장만 만드세요. 짧은 인사와 함께 질문 하나로 시작하면 좋습니다.
+다시 한번 강조합니다: nextLine의 내용은 100% 한글이어야 합니다.
 
 반드시 아래 JSON 형식으로만 답하세요 (다른 텍스트 없이 JSON만):
-{"nextLine": "첫 대사(한국어)"}`;
+{"nextLine": "첫 대사(반드시 한글로만)"}`;
 
   const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
     method: 'POST',
@@ -79,7 +95,12 @@ async function generateOpeningLine(topic, lang) {
     data.candidates[0].content.parts[0].text) || '';
   const cleaned = text.replace(/```json|```/g, '').trim();
   const parsed = JSON.parse(cleaned);
-  return parsed.nextLine || '';
+  const nextLine = parsed.nextLine || '';
+  if (!looksKorean(nextLine)) {
+    console.warn('Gemini가 한글이 아닌 opening line을 반환함(대체 문장 사용):', nextLine);
+    return '안녕하세요! 오늘 기분이 어때요?';
+  }
+  return nextLine;
 }
 
 /**
@@ -92,11 +113,13 @@ async function continueConversation({ history, recognizedText, lang }) {
   if (!apiKey) throw new Error('GEMINI_API_KEY 환경변수가 필요합니다.');
 
   const langInstruction = lang === 'ja'
-    ? 'feedback은 일본어로 쓰세요. nextLine은 실제 대화 대사이므로 항상 한국어로 쓰세요.'
-    : 'feedback과 nextLine 모두 한국어로 쓰세요.';
+    ? 'feedback은 일본어로 쓰세요.'
+    : 'feedback은 한국어로 쓰세요.';
   const historyText = (history || []).map(h => `${h.speaker === 'ai' ? 'AI' : '학습자'}: ${h.text}`).join('\n');
 
-  const prompt = `당신은 한국어를 배우는 일본인 초급 학습자와 대화하는 친절한 한국인 대화 상대입니다.
+  const prompt = `[중요한 규칙] nextLine은 반드시 한글(한국어)로만 작성하세요. 대화 상대(학습자)가 어느 나라 사람이든, 어떤 언어로 대화 기록이 섞여 있든 상관없이, nextLine은 예외 없이 100% 한글이어야 합니다. 일본어, 영어, 그 외 어떤 언어도 절대 섞지 마세요.
+
+당신은 한국어를 배우는 일본인 초급 학습자와 대화하는 친절한 한국인 대화 상대입니다.
 쉬운 한국어(TOPIK 1~2급 수준)로, 짧고 자연스럽게 대화하세요. 질문도 하고 리액션도 하면서, 실제 친구처럼 대화를 이어가세요.
 
 지금까지의 대화:
@@ -105,11 +128,11 @@ ${historyText || '(대화 시작 전)'}
 학습자의 최신 답변(음성 인식 결과라 오타나 어색한 부분이 있을 수 있음): "${recognizedText}"
 
 1. 이 답변이 앞선 맥락에 자연스럽고 타당한 대답인지 판단하세요. 문법이 완벽하지 않아도 의미가 통하면 타당합니다.
-2. 대화를 자연스럽게 이어갈 다음 대사를 한 문장만 만드세요 (질문이어도 되고 리액션이어도 됩니다).
+2. 대화를 자연스럽게 이어갈 다음 대사를 한 문장만 만드세요 (질문이어도 되고 리액션이어도 됩니다). 다시 한번 강조합니다: 이 문장은 100% 한글이어야 합니다.
 ${langInstruction} 학습자를 격려하는 다정한 어조로, feedback은 한두 문장만 쓰세요.
 
 반드시 아래 JSON 형식으로만 답하세요 (다른 텍스트 없이 JSON만):
-{"valid": true 또는 false, "feedback": "한두 문장 설명", "nextLine": "다음 대사(한국어)"}`;
+{"valid": true 또는 false, "feedback": "한두 문장 설명", "nextLine": "다음 대사(반드시 한글로만)"}`;
 
   const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
     method: 'POST',
@@ -123,7 +146,12 @@ ${langInstruction} 학습자를 격려하는 다정한 어조로, feedback은 �
     data.candidates[0].content.parts[0].text) || '';
   const cleaned = text.replace(/```json|```/g, '').trim();
   const parsed = JSON.parse(cleaned);
-  return { valid: !!parsed.valid, feedback: parsed.feedback || '', nextLine: parsed.nextLine || '' };
+  let nextLine = parsed.nextLine || '';
+  if (!looksKorean(nextLine)) {
+    console.warn('Gemini가 한글이 아닌 nextLine을 반환함(대체 문장 사용):', nextLine);
+    nextLine = '그렇군요! 조금 더 이야기해 줄래요?';
+  }
+  return { valid: !!parsed.valid, feedback: parsed.feedback || '', nextLine };
 }
 
 module.exports = { checkAnswerValidity, generateOpeningLine, continueConversation };
