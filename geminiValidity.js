@@ -1,7 +1,7 @@
 'use strict';
 /**
  * Google Gemini API 연동 — 자유 대화에서 사용자의 (음성인식된) 답변이
- * 주어진 질문에 타당한 대답인지 판단한다.
+ * 주어진 질문에 타당한 대답인지 판단하고, 대화를 이어갈 다음 대사를 생성한다.
  *
  * Gemini를 고른 이유: 무료 등급이 신용카드 없이 발급되고, 저희 규모(파일럿)에서
  * 절대 넘길 일 없는 하루 요청 한도를 제공하며, 무료 옵션 중 한국어 이해력이
@@ -26,10 +26,63 @@ function looksKorean(text) {
   return hangulCount / stripped.length >= 0.3;
 }
 
-async function checkAnswerValidity(question, userAnswer, lang) {
+/**
+ * 매 턴 새로 골라 쓰는 대체 대사 — Gemini 호출이 끝까지 실패했을 때만 쓰인다.
+ * 매번 똑같은 문장이 나오면 티가 나므로 몇 가지를 무작위로 섞는다.
+ */
+const NEXT_LINE_FALLBACKS = [
+  '그렇군요! 조금 더 이야기해 줄래요?',
+  '오, 재미있네요! 더 말해줄 수 있어요?',
+  '그래요? 좀 더 자세히 알려주세요.',
+  '흥미롭네요! 다른 이야기도 해볼까요?',
+  '아하, 그렇구나! 그거 말고 또 뭐가 있어요?',
+];
+function randomFallbackLine() {
+  return NEXT_LINE_FALLBACKS[Math.floor(Math.random() * NEXT_LINE_FALLBACKS.length)];
+}
+
+/** 모델 응답 텍스트에서 JSON 객체를 최대한 관대하게 추출한다. */
+function extractJSON(text) {
+  const cleaned = (text || '').replace(/```json|```/g, '').trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    // 앞뒤에 설명 텍스트가 섞여 나온 경우, 그 안의 {...} 부분만 다시 시도한다.
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch (e2) { /* fall through */ }
+    }
+    throw new Error('Gemini 응답을 JSON으로 해석하지 못했습니다: ' + text);
+  }
+}
+
+async function callGeminiOnce(prompt) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY 환경변수가 필요합니다.');
+  const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+  });
+  if (!res.ok) throw new Error(`Gemini 요청 실패 (${res.status}): ${await res.text()}`);
+  const data = await res.json();
+  const text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
+    data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
+    data.candidates[0].content.parts[0].text) || '';
+  return extractJSON(text);
+}
 
+/** 첫 시도가 실패하면(네트워크 문제, JSON 파싱 실패 등) 한 번 더 시도한다. */
+async function callGemini(prompt) {
+  try {
+    return await callGeminiOnce(prompt);
+  } catch (err) {
+    console.warn('Gemini 1차 호출 실패, 재시도:', err.message);
+    return await callGeminiOnce(prompt);
+  }
+}
+
+async function checkAnswerValidity(question, userAnswer, lang) {
   const langInstruction = lang === 'ja' ? '설명(feedback)은 반드시 일본어로 작성하세요.' : '설명(feedback)은 반드시 한국어로 작성하세요.';
   const prompt = `당신은 한국어 학습 앱의 대화 연습을 평가하는 채점자입니다.
 
@@ -42,37 +95,14 @@ ${langInstruction} 학습자를 격려하는 짧고 다정한 어조로 한두 �
 반드시 아래 JSON 형식으로만 답하세요 (다른 텍스트, 코드블록 표시 없이 JSON만):
 {"valid": true 또는 false, "feedback": "한두 문장 설명"}`;
 
-  const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini 요청 실패 (${res.status}): ${errText}`);
-  }
-  const data = await res.json();
-  const text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
-    data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
-    data.candidates[0].content.parts[0].text) || '';
-  const cleaned = text.replace(/```json|```/g, '').trim();
-
-  try {
-    const parsed = JSON.parse(cleaned);
-    return { valid: !!parsed.valid, feedback: parsed.feedback || '' };
-  } catch (e) {
-    throw new Error('Gemini 응답을 JSON으로 해석하지 못했습니다: ' + text);
-  }
+  const parsed = await callGemini(prompt);
+  return { valid: !!parsed.valid, feedback: parsed.feedback || '' };
 }
 
 /**
  * 대화 시작 시, 주제만 가지고 AI 쪽 첫 대사를 생성한다.
  */
 async function generateOpeningLine(topic, lang) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GEMINI_API_KEY 환경변수가 필요합니다.');
-
   const prompt = `[중요한 규칙] nextLine은 반드시 한글(한국어)로만 작성하세요. 일본어, 영어, 그 외 어떤 언어도 절대 섞지 마세요.
 
 당신은 한국어를 배우는 일본인 초급 학습자와 대화하는 친절한 한국인 대화 상대입니다.
@@ -83,18 +113,7 @@ async function generateOpeningLine(topic, lang) {
 반드시 아래 JSON 형식으로만 답하세요 (다른 텍스트 없이 JSON만):
 {"nextLine": "첫 대사(반드시 한글로만)"}`;
 
-  const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-  });
-  if (!res.ok) throw new Error(`Gemini 요청 실패 (${res.status}): ${await res.text()}`);
-  const data = await res.json();
-  const text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
-    data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
-    data.candidates[0].content.parts[0].text) || '';
-  const cleaned = text.replace(/```json|```/g, '').trim();
-  const parsed = JSON.parse(cleaned);
+  const parsed = await callGemini(prompt);
   const nextLine = parsed.nextLine || '';
   if (!looksKorean(nextLine)) {
     console.warn('Gemini가 한글이 아닌 opening line을 반환함(대체 문장 사용):', nextLine);
@@ -109,9 +128,6 @@ async function generateOpeningLine(topic, lang) {
  * history: [{ speaker: 'ai'|'user', text: string }, ...]
  */
 async function continueConversation({ history, recognizedText, lang }) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GEMINI_API_KEY 환경변수가 필요합니다.');
-
   const langInstruction = lang === 'ja'
     ? 'feedback은 일본어로 쓰세요.'
     : 'feedback은 한국어로 쓰세요.';
@@ -120,7 +136,7 @@ async function continueConversation({ history, recognizedText, lang }) {
   const prompt = `[중요한 규칙] nextLine은 반드시 한글(한국어)로만 작성하세요. 대화 상대(학습자)가 어느 나라 사람이든, 어떤 언어로 대화 기록이 섞여 있든 상관없이, nextLine은 예외 없이 100% 한글이어야 합니다. 일본어, 영어, 그 외 어떤 언어도 절대 섞지 마세요.
 
 당신은 한국어를 배우는 일본인 초급 학습자와 대화하는 친절한 한국인 대화 상대입니다.
-쉬운 한국어(TOPIK 1~2급 수준)로, 짧고 자연스럽게 대화하세요. 질문도 하고 리액션도 하면서, 실제 친구처럼 대화를 이어가세요.
+쉬운 한국어(TOPIK 1~2급 수준)로, 짧고 자연스럽게 대화하세요. 질문도 하고 리액션도 하면서, 실제 친구처럼 대화를 이어가세요. 같은 표현을 반복하지 말고, 매번 대화 맥락에 맞게 다르게 반응하세요.
 
 지금까지의 대화:
 ${historyText || '(대화 시작 전)'}
@@ -136,22 +152,18 @@ ${langInstruction} 학습자를 격려하는 다정한 어조로, feedback은 �
 반드시 아래 JSON 형식으로만 답하세요 (다른 텍스트 없이 JSON만):
 {"valid": true 또는 false, "feedback": "한두 문장 설명", "nextLine": "다음 대사(반드시 한글로만)"}`;
 
-  const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-  });
-  if (!res.ok) throw new Error(`Gemini 요청 실패 (${res.status}): ${await res.text()}`);
-  const data = await res.json();
-  const text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
-    data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
-    data.candidates[0].content.parts[0].text) || '';
-  const cleaned = text.replace(/```json|```/g, '').trim();
-  const parsed = JSON.parse(cleaned);
+  let parsed;
+  try {
+    parsed = await callGemini(prompt);
+  } catch (err) {
+    console.warn('Gemini continueConversation 완전 실패, 대체 문장 사용:', err.message);
+    return { valid: null, feedback: '', nextLine: randomFallbackLine() };
+  }
+
   let nextLine = parsed.nextLine || '';
   if (!looksKorean(nextLine)) {
     console.warn('Gemini가 한글이 아닌 nextLine을 반환함(대체 문장 사용):', nextLine);
-    nextLine = '그렇군요! 조금 더 이야기해 줄래요?';
+    nextLine = randomFallbackLine();
   }
   return { valid: !!parsed.valid, feedback: parsed.feedback || '', nextLine };
 }

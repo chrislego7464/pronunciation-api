@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>한국어 발음 쉐도잉</title>
 <style>
-body { margin: 0; background: #171b24; }
+body { margin: 0; background: #171b24; color: var(--text); }
 :root {
   --bg: #171b24;
   --surface: #1f2430;
@@ -22,6 +22,7 @@ body { margin: 0; background: #171b24; }
   --rose: #e08fae;
   --gray: #8890a3;
   --coral: #e2685a;
+  --sky: #6bc4d9;
   --serif: "Nanum Myeongjo", "Noto Serif KR", "Apple SD Gothic Neo", serif;
   --sans: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -207,7 +208,7 @@ body { margin: 0; background: #171b24; }
 
 .sd-empty-hint { color: var(--text-faint); font-size: 14px; font-family: var(--sans); }
 
-.sd-target-preview { font-family: var(--serif); font-size: 19px; margin: 10px 0 4px; }
+.sd-target-preview { font-family: var(--serif); font-size: 19px; margin: 10px 0 4px; color: var(--text); }
 .sd-target-preview .orig { color: var(--text-faint); font-size: 14px; }
 .sd-target-preview .hl { border-bottom: 2px solid var(--blue); color: var(--blue); padding-bottom: 1px; }
 .sd-target-preview .hl[data-rule="경음화"] { border-bottom-color: var(--gold); color: var(--gold); }
@@ -217,6 +218,7 @@ body { margin: 0; background: #171b24; }
 .sd-target-preview .hl[data-rule="유음화"] { border-bottom-color: var(--rose); color: var(--rose); }
 .sd-target-preview .hl[data-rule="ㅎ탈락"] { border-bottom-color: var(--gray); color: var(--gray); }
 .sd-target-preview .hl[data-rule="받침규칙"] { border-bottom-color: var(--coral); color: var(--coral); }
+.sd-target-preview .hl[data-rule="구개음화"] { border-bottom-color: var(--sky); color: var(--sky); }
 .sd-rule-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .sd-rule-tag { font-family: var(--mono); font-size: 11px; border-radius: 999px; padding: 3px 9px; border: 1px solid; }
 .sd-rule-tag[data-rule="경음화"]  { color: var(--gold);  border-color: var(--gold); }
@@ -227,6 +229,7 @@ body { margin: 0; background: #171b24; }
 .sd-rule-tag[data-rule="유음화"]  { color: var(--rose);  border-color: var(--rose); }
 .sd-rule-tag[data-rule="ㅎ탈락"]  { color: var(--gray);  border-color: var(--gray); }
 .sd-rule-tag[data-rule="받침규칙"] { color: var(--coral); border-color: var(--coral); }
+.sd-rule-tag[data-rule="구개음화"] { color: var(--sky); border-color: var(--sky); }
 
 .sd-record-row { display: flex; align-items: center; gap: 16px; }
 .sd-mic-btn {
@@ -302,6 +305,7 @@ body { margin: 0; background: #171b24; }
 .an-bar-fill[data-rule="유음화"] { background: var(--rose); }
 .an-bar-fill[data-rule="ㅎ탈락"] { background: var(--gray); }
 .an-bar-fill[data-rule="받침규칙"] { background: var(--coral); }
+.an-bar-fill[data-rule="구개음화"] { background: var(--sky); }
 .an-rule-score { font-family: var(--mono); font-size: 12px; color: var(--text-faint); width: 36px; text-align: right; flex-shrink: 0; }
 .an-empty { text-align: center; padding: 30px 10px; color: var(--text-faint); font-size: 14px; }
 
@@ -696,6 +700,11 @@ body { margin: 0; background: #171b24; }
         if (cur.jong === 'ㅎ'){ cur.jong = ''; notes.push({pos:i, rule:'ㅎ탈락'}); continue; }
         if (cur.jong === 'ㄶ'){ next.cho = 'ㄴ'; cur.jong = ''; notes.push({pos:i, rule:'ㅎ탈락'}); continue; }
         if (cur.jong === 'ㅀ'){ next.cho = 'ㄹ'; cur.jong = ''; notes.push({pos:i, rule:'ㅎ탈락'}); continue; }
+        if (next.jung === 'ㅣ' && next.jong === ''){
+          if (cur.jong === 'ㄷ'){ next.cho = 'ㅈ'; cur.jong = ''; notes.push({pos:i, rule:'구개음화'}); continue; }
+          if (cur.jong === 'ㅌ'){ next.cho = 'ㅊ'; cur.jong = ''; notes.push({pos:i, rule:'구개음화'}); continue; }
+          if (cur.jong === 'ㄾ'){ next.cho = 'ㅊ'; cur.jong = 'ㄹ'; notes.push({pos:i, rule:'구개음화'}); continue; }
+        }
         if (COMPOUND_SPLIT[cur.jong]){ const [stay, moved] = COMPOUND_SPLIT[cur.jong]; cur.jong = stay; next.cho = moved; notes.push({pos:i, rule:'연음(겹받침)'}); }
         else { next.cho = cur.jong; cur.jong = ''; notes.push({pos:i, rule:'연음'}); }
         continue;
@@ -871,6 +880,7 @@ body { margin: 0; background: #171b24; }
     '유음화': { ko: '유음화', ja: '流音化' },
     'ㅎ탈락': { ko: 'ㅎ탈락', ja: 'ㅎ(h)の脱落' },
     '받침규칙': { ko: '받침 대표음', ja: 'パッチムの代表音' },
+    '구개음화': { ko: '구개음화', ja: '口蓋音化' },
   };
   const CATEGORY_LABELS = {
     '경음화': RULE_LABELS['경음화'], '비음화': RULE_LABELS['비음화'], '연음': RULE_LABELS['연음'],

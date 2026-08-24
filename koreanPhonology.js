@@ -56,6 +56,13 @@ function applyRules(text) {
       // 초성으로 이동한다 (많아요→마나요, 싫어요→시러요 — "만하요/실허요"가 아님).
       if (cur.jong === 'ㄶ') { next.cho = 'ㄴ'; cur.jong = ''; notes.push({ pos: i, rule: 'ㅎ탈락' }); continue; }
       if (cur.jong === 'ㅀ') { next.cho = 'ㄹ'; cur.jong = ''; notes.push({ pos: i, rule: 'ㅎ탈락' }); continue; }
+      // 구개음화: 받침 ㄷ/ㅌ(ㄾ)이 모음 '이'를 만나면 단순 연음이 아니라 ㅈ/ㅊ로
+      // 바뀌어 옮겨간다 (같이→가치, 굳이→구지, 밭이→바치 — 표준발음법 제17항).
+      if (next.jung === 'ㅣ' && next.jong === '') {
+        if (cur.jong === 'ㄷ') { next.cho = 'ㅈ'; cur.jong = ''; notes.push({ pos: i, rule: '구개음화' }); continue; }
+        if (cur.jong === 'ㅌ') { next.cho = 'ㅊ'; cur.jong = ''; notes.push({ pos: i, rule: '구개음화' }); continue; }
+        if (cur.jong === 'ㄾ') { next.cho = 'ㅊ'; cur.jong = 'ㄹ'; notes.push({ pos: i, rule: '구개음화' }); continue; }
+      }
       if (COMPOUND_SPLIT[cur.jong]) {
         const [stay, moved] = COMPOUND_SPLIT[cur.jong];
         cur.jong = stay; next.cho = moved;
@@ -68,6 +75,11 @@ function applyRules(text) {
     }
     if (cur.jong === 'ㅎ' && ASPIRATE[next.cho]) {
       next.cho = ASPIRATE[next.cho]; cur.jong = '';
+      notes.push({ pos: i, rule: '격음화' });
+      continue;
+    }
+    if ((cur.jong === 'ㄶ' || cur.jong === 'ㅀ') && ASPIRATE[next.cho]) {
+      next.cho = ASPIRATE[next.cho]; cur.jong = (cur.jong === 'ㄶ') ? 'ㄴ' : 'ㄹ';
       notes.push({ pos: i, rule: '격음화' });
       continue;
     }
