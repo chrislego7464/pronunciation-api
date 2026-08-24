@@ -1843,8 +1843,8 @@ body { margin: 0; background: #171b24; }
   // ================================================================
   const CONV_DURATIONS = [60, 120, 180]; // 초 단위 (1/2/3분)
   const GENERIC_TOPIC = '자유로운 일상 대화';
-  const FALLBACK_NEXT_LINE = { ko: '그렇군요! 조금 더 이야기해 줄래요?', ja: 'そうなんですね！もう少し話してくれますか？' };
-  const FALLBACK_OPENING = { ko: '안녕하세요! 오늘 기분이 어때요?', ja: 'こんにちは！今日の気分はどうですか？' };
+  const FALLBACK_NEXT_LINE = '그렇군요! 조금 더 이야기해 줄래요?';
+  const FALLBACK_OPENING = '안녕하세요! 오늘 기분이 어때요?';
 
   let conversationStarter = 'ai'; // 'ai' | 'user'
   let selectedDurationSec = null;
@@ -1927,10 +1927,10 @@ body { margin: 0; background: #171b24; }
         body: JSON.stringify({ topic: GENERIC_TOPIC, lang }),
       });
       const data = await res.json();
-      renderAiLine(data.nextLine || FALLBACK_OPENING[lang]);
+      renderAiLine(data.nextLine || FALLBACK_OPENING);
     } catch (err) {
       console.error(err);
-      renderAiLine(FALLBACK_OPENING[lang]);
+      renderAiLine(FALLBACK_OPENING);
     }
   }
 
@@ -2045,7 +2045,7 @@ body { margin: 0; background: #171b24; }
         // 다음 대사 생성에 실패해도(네트워크 문제 등) 대화가 끊기지 않도록,
         // 그 경우엔 대체 문장으로 계속 이어간다.
         if (sessionActive) {
-          renderAiLine(data.nextLine || FALLBACK_NEXT_LINE[lang]);
+          renderAiLine(data.nextLine || FALLBACK_NEXT_LINE);
         }
       } catch (err) {
         console.error(err);
